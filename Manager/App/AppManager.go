@@ -1,17 +1,19 @@
 package App
 
 import (
-	"sync"
-
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Global"
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Interface"
 	"github.com/neerajchowdary889/GoRoutinesManager/types"
 )
 
-type AppManager struct{}
+type AppManager struct{
+	AppName string
+}
 
-func NewAppManager() Interface.AppGoroutineManagerInterface {
-	return &AppManager{}
+func NewAppManager(Appname string) Interface.AppGoroutineManagerInterface {
+	return &AppManager{
+		AppName: Appname,
+	}
 }
 
 func (AM *AppManager) CreateApp(appName string) (*types.AppManager, error) {
@@ -29,34 +31,19 @@ func (AM *AppManager) CreateApp(appName string) (*types.AppManager, error) {
 		return types.GetAppManager(appName)
 	}
 
-	wg, err := AM.NewWaitGroup()
-	if err != nil {
-		return nil, err
-	}
-
-	AppMu := &sync.RWMutex{}
-
-	app := &types.AppManager{
-		AppName:       appName,
-		AppMu:         AppMu,
-		LocalManagers: make(map[string]*types.LocalManager),
-		Wg:            wg,
-	}
-	app.SetAppContext()
+	app := types.NewAppManager(appName).SetAppContext().SetAppMutex()
 	types.SetAppManager(appName, app)
+
 	return app, nil
 }
 
 func (AM *AppManager) Shutdown(safe bool) error {
+	//TODO
 	return nil
 }
 
-func (AM *AppManager) NewWaitGroup() (*sync.WaitGroup, error) {
-	wg := &sync.WaitGroup{}
-	return wg, nil
-}
-
 func (AM *AppManager) CreateLocal(localName string) (*types.LocalManager, error) {
+
 	return nil, nil
 }
 
