@@ -50,7 +50,7 @@ func (GM *GlobalManager) UnlockGlobalWriteMutex() {
 }
 
 
-// Set APIs
+// >>> Set APIs
 // SetGlobalMutex sets the global mutex for the global manager
 func (GM *GlobalManager) SetGlobalMutex() GlobalManager {
 	GM.GlobalMu = &sync.RWMutex{}
@@ -89,7 +89,7 @@ func (GM *GlobalManager) RemoveAppManager(appName string) GlobalManager {
 	return *GM
 }
 
-// Get APIs
+// >>> Get APIs
 
 // GetGlobalMutex gets the global mutex for the global manager
 func (GM *GlobalManager) GetGlobalMutex() *sync.RWMutex {

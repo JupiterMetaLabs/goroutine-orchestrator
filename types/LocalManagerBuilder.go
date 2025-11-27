@@ -1,12 +1,15 @@
 package types
 
 import (
+	"context"
+	"fmt"
 	"sync"
 
+	"github.com/neerajchowdary889/GoRoutinesManager/Context"
 	"github.com/neerajchowdary889/GoRoutinesManager/types/Errors"
 )
 
-const(
+const (
 	Prefix_LocalManager = "LocalManager."
 )
 
@@ -18,14 +21,15 @@ func NewLocalManager(localName string, appName string) *LocalManager {
 		}
 		return LocalManager
 	}
-	ctx, _ := NewAppManager(appName).GetAppContext()
 
-	return &LocalManager{
+	LocalManager := &LocalManager{
 		LocalName: localName,
-		Routines: make(map[string]*Routine),
-		ParentCtx: ctx,
+		Routines:  make(map[string]*Routine),
 	}
 
+	LocalManager.SetParentContext()
+
+	return LocalManager
 }
 
 // Lock APIs
@@ -61,16 +65,137 @@ func (LM *LocalManager) UnlockAppWriteMutex() {
 	LM.LocalMu.Unlock()
 }
 
-
+// Set the Local mutex to the local manager
 func (LM *LocalManager) SetLocalMutex() *LocalManager {
 	LM.LocalMu = &sync.RWMutex{}
 	return LM
 }
 
 
-// Set APIs
+// >>> Set APIs
 // SetLocalName sets the name of the local manager
 func (LM *LocalManager) SetLocalName(localName string) *LocalManager {
 	LM.LocalName = localName
 	return LM
+}
+
+// SetLocalContext sets the context for the local manager
+func (LM *LocalManager) SetLocalContext() *LocalManager {
+	ctx := Context.GetAppContext(Prefix_LocalManager + LM.LocalName).Get()
+	Done := func() {
+		Context.GetAppContext(Prefix_LocalManager + LM.LocalName).Done(ctx)
+	}
+	LM.Ctx = ctx
+	LM.Cancel = Done
+	return LM
+}
+
+// SetLocalWaitGroup sets the wait group for the local manager
+func (LM *LocalManager) SetLocalWaitGroup() *LocalManager {
+	LM.Wg = &sync.WaitGroup{}
+	return LM
+}
+
+// SetParentContext sets the parent context for the local manager
+func (LM *LocalManager) SetParentContext() *LocalManager {
+	LM.ParentCtx, _ = NewAppManager(LM.LocalName).GetAppContext()
+	return LM
+}
+
+// AddRoutine adds a new routine to the local manager
+func (LM *LocalManager) AddRoutine(routine *Routine) *LocalManager {
+	// Lock first
+	LM.LockAppWriteMutex()
+	defer LM.UnlockAppWriteMutex()
+
+	LM.Routines[routine.ID] = routine
+	return LM
+}
+
+// RemoveRoutine removes a routine from the local manager
+func (LM *LocalManager) RemoveRoutine(routine *Routine, safe bool) *LocalManager {
+
+	// Lock -> remove the routine -> unlock
+	LM.LockAppWriteMutex()
+	defer LM.UnlockAppWriteMutex()
+
+	// Cancel the routine's context to signal it to stop
+	if routine.Done != nil {
+		routine.Done <- struct{}{}
+	}
+
+	// TODO: safe or unsafe terminate is based on the flag
+
+	// Remove from the map
+	delete(LM.Routines, routine.ID)
+	return LM
+}
+
+// AddFunctionWg adds a new function wait group to the local manager
+func (LM *LocalManager) AddFunctionWg(functionName string) *LocalManager {
+	// Lock -> add the function wg -> unlock
+	LM.LockAppWriteMutex()
+	defer LM.UnlockAppWriteMutex()
+
+	LM.FunctionWgs[functionName] = &sync.WaitGroup{}
+	return LM
+}
+
+// RemoveFunctionWg removes a function wait group from the local manager
+func (LM *LocalManager) RemoveFunctionWg(functionName string) *LocalManager {
+
+	// Lock -> remove the function wg -> unlock
+	LM.LockAppWriteMutex()
+	defer LM.UnlockAppWriteMutex()
+
+	delete(LM.FunctionWgs, functionName)
+	return LM
+}
+
+
+// >>> Get APIs
+// GetRoutine gets a specific routine for the local manager
+func (LM *LocalManager) GetRoutine(routineID string) (*Routine, error) {
+	LM.LockAppReadMutex()
+	defer LM.UnlockAppReadMutex()
+
+	if _, ok := LM.Routines[routineID]; !ok {
+		return nil, fmt.Errorf("%w: %s", Errors.ErrRoutineNotFound, routineID)
+	}
+	return LM.Routines[routineID], nil
+}
+
+// GetFunctionWg gets a specific function wait group for the local manager
+func (LM *LocalManager) GetFunctionWg(functionName string) (*sync.WaitGroup, error) {
+	LM.LockAppReadMutex()
+	defer LM.UnlockAppReadMutex()
+
+	if _, ok := LM.FunctionWgs[functionName]; !ok {
+		return nil, fmt.Errorf("%w: %s", Errors.ErrFunctionWgNotFound, functionName)
+	}
+	return LM.FunctionWgs[functionName], nil
+}
+
+// GetRoutineCount gets the number of routines for the local manager
+func (LM *LocalManager) GetRoutineCount() int {
+	LM.LockAppReadMutex()
+	defer LM.UnlockAppReadMutex()
+	return len(LM.Routines)
+}
+
+// GetFunctionWgCount gets the number of function wait groups for the local manager
+func (LM *LocalManager) GetFunctionWgCount() int {
+	LM.LockAppReadMutex()
+	defer LM.UnlockAppReadMutex()
+	return len(LM.FunctionWgs)
+}
+
+// GetLocalName gets the name of the local manager
+func (LM *LocalManager) GetLocalName() string {
+	return LM.LocalName
+}
+
+// GetParentContext gets the parent context for the local manager
+func (LM *LocalManager) GetParentContext() context.Context {
+	return LM.ParentCtx
 }

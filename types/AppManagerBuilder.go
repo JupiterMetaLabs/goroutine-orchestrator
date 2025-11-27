@@ -2,6 +2,7 @@ package types
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/neerajchowdary889/GoRoutinesManager/Context"
@@ -20,10 +21,14 @@ func NewAppManager(appName string) *AppManager {
 		}
 		return value
 	}
-	return &AppManager{
+
+	AppManger := &AppManager{
 		AppName:       appName,
 		LocalManagers: make(map[string]*LocalManager),
 	}
+	AppManger.SetAppContext()
+
+	return AppManger
 }
 
 // Lock APIs
@@ -60,7 +65,7 @@ func (AM *AppManager) UnlockAppWriteMutex() {
 }
 
 
-// Set APIs
+// >>> Set APIs
 // SetAppName sets the name of the app for the app manager
 func (AM *AppManager) SetAppName(appName string) AppManager {
 	AM.AppName = appName
@@ -118,7 +123,7 @@ func (AM *AppManager) RemoveLocalManager(localName string) AppManager {
 }
 
 
-// Get APIs
+// >>> Get APIs
 // GetLocalManagers gets all the local managers for the app manager
 func (AM *AppManager) GetLocalManagers() map[string]*LocalManager {
 	AM.LockAppReadMutex()
@@ -131,7 +136,7 @@ func (AM *AppManager) GetLocalManager(localName string) (*LocalManager, error) {
 	AM.LockAppReadMutex()
 	defer AM.UnlockAppReadMutex()
 	if _, ok := AM.LocalManagers[localName]; !ok {
-		return nil, Errors.ErrLocalManagerNotFound
+		return nil, fmt.Errorf("%w: %s", Errors.ErrLocalManagerNotFound, localName)
 	}
 	return AM.LocalManagers[localName], nil
 }
