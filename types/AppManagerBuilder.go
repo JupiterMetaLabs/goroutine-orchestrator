@@ -4,7 +4,12 @@ import (
 	"context"
 	"sync"
 
+	"github.com/neerajchowdary889/GoRoutinesManager/Context"
 	"github.com/neerajchowdary889/GoRoutinesManager/types/Errors"
+)
+
+const(
+	Prefix_AppManager = "AppManager."
 )
 
 func NewAppManager(appName string) *AppManager {
@@ -54,6 +59,7 @@ func (AM *AppManager) UnlockAppWriteMutex() {
 	AM.AppMu.Unlock()
 }
 
+
 // Set APIs
 // SetAppName sets the name of the app for the app manager
 func (AM *AppManager) SetAppName(appName string) AppManager {
@@ -61,6 +67,7 @@ func (AM *AppManager) SetAppName(appName string) AppManager {
 	return *AM
 }
 
+// SetAppMutex sets the mutex for the app manager
 func (AM *AppManager) SetAppMutex() AppManager {
 	if AM.AppMu == nil {
 		AM.AppMu = &sync.RWMutex{}
@@ -68,17 +75,24 @@ func (AM *AppManager) SetAppMutex() AppManager {
 	return *AM
 }
 
-func (AM *AppManager) SetAppContext(ctx context.Context, cancel context.CancelFunc) AppManager {
+// SetAppContext sets the context for the app manager
+func (AM *AppManager) SetAppContext() AppManager {
+	ctx := Context.GetAppContext(Prefix_AppManager + AM.AppName).Get()
+	Done := func() {
+		Context.GetAppContext(Prefix_AppManager + AM.AppName).Done(ctx)
+	}
 	AM.Ctx = ctx
-	AM.Cancel = cancel
+	AM.Cancel = Done
 	return *AM
 }
 
+// SetAppWaitGroup sets the wait group for the app manager
 func (AM *AppManager) SetAppWaitGroup(wg *sync.WaitGroup) AppManager {
 	AM.Wg = wg
 	return *AM
 }
 
+// SetAppParentContext sets the parent context for the app manager
 func (AM *AppManager) SetAppParentContext() AppManager {
 	AM.ParentCtx, _ = NewGlobalManager().GetGlobalContext()
 	return *AM
@@ -102,6 +116,7 @@ func (AM *AppManager) RemoveLocalManager(localName string) AppManager {
 	delete(AM.LocalManagers, localName)
 	return *AM
 }
+
 
 // Get APIs
 // GetLocalManagers gets all the local managers for the app manager

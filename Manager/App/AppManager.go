@@ -3,8 +3,6 @@ package App
 import (
 	"sync"
 
-	"github.com/neerajchowdary889/GoRoutinesManager/Context"
-
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Global"
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Interface"
 	"github.com/neerajchowdary889/GoRoutinesManager/types"
@@ -16,7 +14,7 @@ func NewAppManager() Interface.AppGoroutineManagerInterface {
 	return &AppManager{}
 }
 
-func (a *AppManager) CreateApp(appName string) (*types.AppManager, error) {
+func (AM *AppManager) CreateApp(appName string) (*types.AppManager, error) {
 	// First check if the app manager is already initialized
 	if !types.IsIntilized().App(appName) {
 		// If Global Manager is Not Intilized, then we need to initialize it
@@ -31,12 +29,7 @@ func (a *AppManager) CreateApp(appName string) (*types.AppManager, error) {
 		return types.GetAppManager(appName)
 	}
 
-	ctx := Context.GetAppContext(Prefix + appName).Get()
-	Done := func() {
-		Context.GetAppContext(Prefix + appName).Done(ctx)
-	}
-
-	wg, err := a.NewWaitGroup()
+	wg, err := AM.NewWaitGroup()
 	if err != nil {
 		return nil, err
 	}
@@ -47,27 +40,45 @@ func (a *AppManager) CreateApp(appName string) (*types.AppManager, error) {
 		AppName:       appName,
 		AppMu:         AppMu,
 		LocalManagers: make(map[string]*types.LocalManager),
-		Ctx:           ctx,
-		Cancel:        Done,
 		Wg:            wg,
 	}
+	app.SetAppContext()
 	types.SetAppManager(appName, app)
 	return app, nil
 }
 
-func (a *AppManager) Shutdown(safe bool) error {
+func (AM *AppManager) Shutdown(safe bool) error {
 	return nil
 }
 
-func (a *AppManager) NewWaitGroup() (*sync.WaitGroup, error) {
+func (AM *AppManager) NewWaitGroup() (*sync.WaitGroup, error) {
 	wg := &sync.WaitGroup{}
 	return wg, nil
 }
 
-func (a *AppManager) CreateLocal(localName string) (*types.LocalManager, error) {
+func (AM *AppManager) CreateLocal(localName string) (*types.LocalManager, error) {
 	return nil, nil
 }
 
-func (a *AppManager) GetAllLocalManagers() ([]*types.LocalManager, error) {
+func (AM *AppManager) GetAllLocalManagers() ([]*types.LocalManager, error) {
 	return nil, nil
+}
+
+func (AM *AppManager) GetLocalManager(localName string) (*types.LocalManager, error) {
+	return nil, nil
+}
+
+func (AM *AppManager) GetAllGoroutines() ([]*types.Routine, error) {
+	// TODO: Implement logic to collect all goroutines from all local managers
+	return nil, nil
+}
+
+func (AM *AppManager) GetGoroutineCount() int {
+	// TODO: Implement logic to count all goroutines across all local managers
+	return 0
+}
+
+func (AM *AppManager) GetLocalManagerCount() int {
+	// TODO: Implement logic to count all local managers
+	return 0
 }
