@@ -56,9 +56,6 @@ type LocalManagerCreator interface {
 	CreateLocal(localName string) (*types.LocalManager, error)
 }
 
-type WaitGroupCreator interface {
-	NewWaitGroup() (*sync.WaitGroup, error)
-}
 
 type FunctionWaitGroupCreator interface {
 	NewFunctionWaitGroup(ctx context.Context, functionName string) (*sync.WaitGroup, error)
@@ -78,8 +75,6 @@ type GlobalGoroutineManagerInterface interface {
 	LocalManagerLister
 
 	GoroutineLister
-
-	WaitGroupCreator
 }
 
 // AppGoroutineManagerInterface defines the complete interface for app manager
@@ -92,7 +87,6 @@ type AppGoroutineManagerInterface interface {
 	LocalManagerLister
 
 	GoroutineLister
-	WaitGroupCreator
 }
 
 // LocalGoroutineManagerInterface defines the complete interface for local manager
@@ -102,6 +96,5 @@ type LocalGoroutineManagerInterface interface {
 	GoroutineSpawner
 	GoroutineLister
 
-	WaitGroupCreator
 	FunctionWaitGroupCreator
 }

@@ -165,6 +165,13 @@ func (LM *LocalManager) GetRoutine(routineID string) (*Routine, error) {
 	return LM.Routines[routineID], nil
 }
 
+// GetRoutines gets all the routines for the local manager
+func (LM *LocalManager) GetRoutines() map[string]*Routine {
+	LM.LockAppReadMutex()
+	defer LM.UnlockAppReadMutex()
+	return LM.Routines
+}
+
 // GetFunctionWg gets a specific function wait group for the local manager
 func (LM *LocalManager) GetFunctionWg(functionName string) (*sync.WaitGroup, error) {
 	LM.LockAppReadMutex()

@@ -9,7 +9,7 @@ import (
 	"github.com/neerajchowdary889/GoRoutinesManager/types/Errors"
 )
 
-const(
+const (
 	Prefix_AppManager = "AppManager."
 )
 
@@ -64,64 +64,62 @@ func (AM *AppManager) UnlockAppWriteMutex() {
 	AM.AppMu.Unlock()
 }
 
-
 // >>> Set APIs
 // SetAppName sets the name of the app for the app manager
-func (AM *AppManager) SetAppName(appName string) AppManager {
+func (AM *AppManager) SetAppName(appName string) *AppManager {
 	AM.AppName = appName
-	return *AM
+	return AM
 }
 
 // SetAppMutex sets the mutex for the app manager
-func (AM *AppManager) SetAppMutex() AppManager {
+func (AM *AppManager) SetAppMutex() *AppManager {
 	if AM.AppMu == nil {
 		AM.AppMu = &sync.RWMutex{}
 	}
-	return *AM
+	return AM
 }
 
 // SetAppContext sets the context for the app manager
-func (AM *AppManager) SetAppContext() AppManager {
+func (AM *AppManager) SetAppContext() *AppManager {
 	ctx := Context.GetAppContext(Prefix_AppManager + AM.AppName).Get()
 	Done := func() {
 		Context.GetAppContext(Prefix_AppManager + AM.AppName).Done(ctx)
 	}
 	AM.Ctx = ctx
 	AM.Cancel = Done
-	return *AM
+	return AM
 }
 
 // SetAppWaitGroup sets the wait group for the app manager
-func (AM *AppManager) SetAppWaitGroup(wg *sync.WaitGroup) AppManager {
+func (AM *AppManager) SetAppWaitGroup(wg *sync.WaitGroup) *AppManager {
 	AM.Wg = wg
-	return *AM
+	return AM
 }
 
 // SetAppParentContext sets the parent context for the app manager
-func (AM *AppManager) SetAppParentContext() AppManager {
+func (AM *AppManager) SetAppParentContext() *AppManager {
 	AM.ParentCtx, _ = NewGlobalManager().GetGlobalContext()
-	return *AM
+	return AM
 }
 
 // AddLocalManager adds a new local manager to the app manager
-func (AM *AppManager) AddLocalManager(localName string, local *LocalManager) AppManager {
+func (AM *AppManager) AddLocalManager(localName string, local *LocalManager) *AppManager {
 	if IsIntilized().Local(AM.AppName, localName) {
-		return *AM
+		return AM
 	}
 	AM.LockAppWriteMutex()
 	defer AM.UnlockAppWriteMutex()
 	AM.LocalManagers[localName] = local
-	return *AM
+	return AM
 }
 
 // RemoveLocalManager removes a local manager from the app manager
-func (AM *AppManager) RemoveLocalManager(localName string) AppManager {
+func (AM *AppManager) RemoveLocalManager(localName string) *AppManager {
 	AM.LockAppWriteMutex()
 	defer AM.UnlockAppWriteMutex()
 	delete(AM.LocalManagers, localName)
-	return *AM
+	return AM
 }
-
 
 // >>> Get APIs
 // GetLocalManagers gets all the local managers for the app manager

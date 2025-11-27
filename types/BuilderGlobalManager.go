@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/neerajchowdary889/GoRoutinesManager/Context"
 	"github.com/neerajchowdary889/GoRoutinesManager/types/Errors"
 )
 
@@ -11,9 +12,11 @@ func NewGlobalManager() *GlobalManager {
 	if IsIntilized().Global() {
 		return Global
 	}
-	return &GlobalManager{
+	GlobalManger := &GlobalManager{
 		AppManagers: make(map[string]*AppManager),
 	}
+
+	return GlobalManger
 }
 
 // Mutex Lock APIs
@@ -49,48 +52,48 @@ func (GM *GlobalManager) UnlockGlobalWriteMutex() {
 	GM.GlobalMu.Unlock()
 }
 
-
 // >>> Set APIs
 // SetGlobalMutex sets the global mutex for the global manager
-func (GM *GlobalManager) SetGlobalMutex() GlobalManager {
+func (GM *GlobalManager) SetGlobalMutex() *GlobalManager {
 	GM.GlobalMu = &sync.RWMutex{}
-	return *GM
+	return GM
 }
 
 // SetGlobalContext sets the global context and cancel function for the global manager
-func (GM *GlobalManager) SetGlobalContext(ctx context.Context, cancel context.CancelFunc) GlobalManager {
-	GM.Ctx = ctx
-	GM.Cancel = cancel
-	return *GM
+func (GM *GlobalManager) SetGlobalContext() *GlobalManager {
+	GM.Ctx = Context.GetGlobalContext().Get()
+	GM.Cancel = func() {
+		Context.GetGlobalContext().Done(GM.Ctx)
+	}
+	return GM
 }
 
 // SetGlobalWaitGroup sets the global wait group for the global manager - This is used to concurrently wait for all app managers to shutdown
-func (GM *GlobalManager) SetGlobalWaitGroup(wg *sync.WaitGroup) GlobalManager {
-	GM.Wg = wg
-	return *GM
+func (GM *GlobalManager) SetGlobalWaitGroup() *GlobalManager {
+	GM.Wg = &sync.WaitGroup{}
+	return GM
 }
 
 // AddAppManager adds a new app manager to the global manager
-func (GM *GlobalManager) AddAppManager(appName string, app *AppManager) GlobalManager {
+func (GM *GlobalManager) AddAppManager(appName string, app *AppManager) *GlobalManager {
 	if IsIntilized().App(appName) {
-		return *GM
+		return GM
 	}
 	GM.LockGlobalWriteMutex()
 	defer GM.UnlockGlobalWriteMutex()
 	GM.AppManagers[appName] = app
-	return *GM
+	return GM
 }
 
 // RemoveAppManager removes an app manager from the global manager
-func (GM *GlobalManager) RemoveAppManager(appName string) GlobalManager {
+func (GM *GlobalManager) RemoveAppManager(appName string) *GlobalManager {
 	GM.LockGlobalWriteMutex()
 	defer GM.UnlockGlobalWriteMutex()
 	delete(GM.AppManagers, appName)
-	return *GM
+	return GM
 }
 
 // >>> Get APIs
-
 // GetGlobalMutex gets the global mutex for the global manager
 func (GM *GlobalManager) GetGlobalMutex() *sync.RWMutex {
 	return GM.GlobalMu
@@ -129,4 +132,3 @@ func (GM *GlobalManager) GetAppManagerCount() int {
 	defer GM.UnlockGlobalReadMutex()
 	return len(GM.AppManagers)
 }
-
