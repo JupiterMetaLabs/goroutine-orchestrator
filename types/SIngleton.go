@@ -11,14 +11,14 @@ func SetAppManager(appName string, app *AppManager) {
 	if IsIntilized().App(appName) {
 		return
 	}
-	App[appName] = app
+	Global.AppManagers[appName] = app
 }
 
 func SetLocalManager(appName, localName string, local *LocalManager) {
 	if IsIntilized().Local(appName, localName) {
 		return
 	}
-	Local[appName][localName] = local
+	Global.AppManagers[appName].LocalManagers[localName] = local
 }
 
 func GetGlobalManager() (*GlobalManager, error) {
