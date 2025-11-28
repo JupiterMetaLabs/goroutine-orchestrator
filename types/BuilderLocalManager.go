@@ -29,6 +29,9 @@ func NewLocalManager(localName string, appName string) *LocalManager {
 
 	LocalManager.SetParentContext()
 
+	// Add the local manager to the app manager
+	SetLocalManager(appName, localName, LocalManager)
+
 	return LocalManager
 }
 
@@ -120,8 +123,8 @@ func (LM *LocalManager) RemoveRoutine(routine *Routine, safe bool) *LocalManager
 	defer LM.UnlockAppWriteMutex()
 
 	// Cancel the routine's context to signal it to stop
-	if routine.Done != nil {
-		routine.Done <- struct{}{}
+	if routine.Cancel != nil {
+		routine.Cancel()
 	}
 
 	// TODO: safe or unsafe terminate is based on the flag

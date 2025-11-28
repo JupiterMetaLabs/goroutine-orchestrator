@@ -47,6 +47,7 @@ type Routine struct {
 	ID           string
 	FunctionName string
 	Ctx          context.Context
-	Done         chan struct{}
+	Cancel       context.CancelFunc
+	Done         <-chan struct{}
 	StartedAt    int64 // Unix timestamp or monotonic time
 }

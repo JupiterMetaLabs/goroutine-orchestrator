@@ -28,6 +28,9 @@ func NewAppManager(appName string) *AppManager {
 	}
 	AppManger.SetAppContext()
 
+	// Add the app manager to the global manager
+	SetAppManager(appName, AppManger)
+	
 	return AppManger
 }
 

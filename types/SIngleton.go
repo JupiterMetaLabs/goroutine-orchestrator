@@ -13,14 +13,14 @@ func SetAppManager(appName string, app *AppManager) {
 	if IsIntilized().App(appName) {
 		return
 	}
-	Global.AppManagers[appName] = app
+	Global.AddAppManager(appName, app)
 }
 
 func SetLocalManager(appName, localName string, local *LocalManager) {
 	if IsIntilized().Local(appName, localName) {
 		return
 	}
-	Global.AppManagers[appName].LocalManagers[localName] = local
+	Global.AppManagers[appName].AddLocalManager(localName, local)
 }
 
 func GetGlobalManager() (*GlobalManager, error) {
@@ -34,15 +34,16 @@ func GetAppManager(appName string) (*AppManager, error) {
 	if !IsIntilized().App(appName) {
 		return nil, Errors.ErrAppManagerNotFound
 	}
-	return Global.AppManagers[appName], nil
+	return Global.GetAppManager(appName)
 }
 
 func GetLocalManager(appName, localName string) (*LocalManager, error) {
 	if IsIntilized().App(appName) {
 		return nil, Errors.ErrAppManagerNotFound
 	}
-	if _, ok := Global.AppManagers[appName].LocalManagers[localName]; !ok {
-		return nil, Errors.ErrLocalManagerNotFound
+	appManager, err := Global.GetAppManager(appName)
+	if err != nil {
+		return nil, err
 	}
-	return Global.AppManagers[appName].LocalManagers[localName], nil
+	return appManager.GetLocalManager(localName)
 }

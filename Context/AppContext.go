@@ -121,3 +121,19 @@ func (ac *AppContext) NewChildContext() (context.Context, context.CancelFunc) {
 		cancel()
 	}
 }
+
+// Spawn Child for the given context
+func (ac *AppContext) SpawnChild(ctx context.Context) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(ctx)
+	return ctx, func() {
+		cancel()
+	}
+}
+
+// Spawn Child for the given context with timeout
+func (ac *AppContext) SpawnChildWithTimeout(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	return ctx, func() {
+		cancel()
+	}
+}

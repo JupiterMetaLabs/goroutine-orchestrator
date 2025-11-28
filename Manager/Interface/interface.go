@@ -48,7 +48,7 @@ type AppManagerLister interface {
 
 // AppManagerCreator creates new app managers
 type AppManagerCreator interface {
-	CreateApp(appName string) (*types.AppManager, error)
+	CreateApp() (*types.AppManager, error)
 }
 
 // LocalManagerCreator creates new local managers
@@ -83,7 +83,6 @@ type AppGoroutineManagerInterface interface {
 
 	AppManagerCreator
 
-	LocalManagerCreator
 	LocalManagerLister
 
 	GoroutineLister
@@ -91,8 +90,11 @@ type AppGoroutineManagerInterface interface {
 
 // LocalGoroutineManagerInterface defines the complete interface for local manager
 type LocalGoroutineManagerInterface interface {
+	LocalManagerCreator
+
 	FunctionShutdowner
 	Shutdowner
+
 	GoroutineSpawner
 	GoroutineLister
 

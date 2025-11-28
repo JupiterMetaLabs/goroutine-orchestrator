@@ -109,21 +109,6 @@ func (gc *GlobalContext) NewChildContextWithTimeout(timeout time.Duration) (cont
 	}
 }
 
-// Spawn Child for the given context
-func (gc *GlobalContext) SpawnChild(ctx context.Context) (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(ctx)
-	return ctx, func() {
-		cancel()
-	}
-}
-
-// Spawn Child for the given context with timeout
-func (gc *GlobalContext) SpawnChildWithTimeout(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	return ctx, func() {
-		cancel()
-	}
-}
 
 // ListActiveApps returns a list of all apps with active contexts.
 func (gc *GlobalContext) ListActiveApps() []string {
