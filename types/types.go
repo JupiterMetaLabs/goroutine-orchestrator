@@ -3,6 +3,7 @@ package types
 import (
 	"context"
 	"sync"
+	"time"
 )
 
 // Singleton pattern to not repeat the same managers again
@@ -50,4 +51,9 @@ type Routine struct {
 	Cancel       context.CancelFunc
 	Done         <-chan struct{}
 	StartedAt    int64 // Unix timestamp or monotonic time
+}
+
+type Metadata struct{
+	MaxRoutines int
+	ShutdownTimeout time.Duration
 }

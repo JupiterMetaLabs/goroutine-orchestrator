@@ -3,6 +3,7 @@ package Global
 import (
 	AppHelper "github.com/neerajchowdary889/GoRoutinesManager/Helper/App"
 	LocalHelper "github.com/neerajchowdary889/GoRoutinesManager/Helper/Local"
+	 "github.com/neerajchowdary889/GoRoutinesManager/Manager/App"
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Interface"
 	"github.com/neerajchowdary889/GoRoutinesManager/types"
 )
@@ -37,15 +38,22 @@ func (GM *GlobalManager) Shutdown(safe bool) error {
 	}
 
 	if safe {
-		// Safe shutdown: wait for all app managers to complete gracefully
-		// Use the GlobalManager's wait group
+		// Safe shutdown: trigger shutdown on all app managers and wait
 		if globalMgr.Wg != nil {
 			// Add all app managers to the wait group
 			for _, appMgr := range appManagers {
 				globalMgr.Wg.Add(1)
 				go func(am *types.AppManager) {
 					defer globalMgr.Wg.Done()
-					// Safe shutdown: wait for app manager's wait group
+
+					// Create an AppManager instance to call Shutdown
+					amInstance := App.NewAppManager(am.AppName)
+
+					// Call Shutdown on the app manager
+					// This will trigger AppManager.Shutdown -> LocalManager.Shutdown
+					_ = amInstance.Shutdown(true)
+
+					// Wait for app manager's wait group (redundant but safe)
 					if am.Wg != nil {
 						am.Wg.Wait()
 					}
@@ -57,26 +65,11 @@ func (GM *GlobalManager) Shutdown(safe bool) error {
 	} else {
 		// Unsafe shutdown: cancel all app manager contexts forcefully
 		for _, appMgr := range appManagers {
-			// Cancel all local manager contexts
-			for _, localMgr := range appMgr.GetLocalManagers() {
-				// Cancel all routine contexts
-				for _, routine := range localMgr.GetRoutines() {
-					cancel := routine.GetCancel()
-					if cancel != nil {
-						cancel()
-					}
-				}
+			// Create an AppManager instance to call Shutdown
+			amInstance := App.NewAppManager(appMgr.AppName)
 
-				// Cancel local manager context
-				if localMgr.Cancel != nil {
-					localMgr.Cancel()
-				}
-			}
-
-			// Cancel the app manager's context
-			if appMgr.Cancel != nil {
-				appMgr.Cancel()
-			}
+			// Call Shutdown(false) which handles cancellation
+			_ = amInstance.Shutdown(false)
 		}
 
 		// Cancel the global manager's context

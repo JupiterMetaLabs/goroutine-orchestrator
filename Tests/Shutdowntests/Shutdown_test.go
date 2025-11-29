@@ -1,4 +1,4 @@
-package Tests
+package Shutdowntests
 
 import (
 	"context"
@@ -10,11 +10,12 @@ import (
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/App"
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Global"
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Local"
+	"github.com/neerajchowdary889/GoRoutinesManager/Tests/Common"
 )
 
 func TestLocalManager_SafeShutdown(t *testing.T) {
 	fmt.Println("\n=== TestLocalManager_SafeShutdown ===")
-	resetGlobalState()
+	Common.ResetGlobalState()
 
 	// Setup
 	appMgr := App.NewAppManager("test-app")
@@ -67,7 +68,7 @@ func TestLocalManager_SafeShutdown(t *testing.T) {
 
 func TestLocalManager_UnsafeShutdown(t *testing.T) {
 	fmt.Println("\n=== TestLocalManager_UnsafeShutdown ===")
-	resetGlobalState()
+	Common.ResetGlobalState()
 
 	// Setup
 	appMgr := App.NewAppManager("test-app")
@@ -130,7 +131,7 @@ func TestLocalManager_UnsafeShutdown(t *testing.T) {
 
 func TestAppManager_SafeShutdown(t *testing.T) {
 	fmt.Println("\n=== TestAppManager_SafeShutdown ===")
-	resetGlobalState()
+	Common.ResetGlobalState()
 
 	// Setup
 	appMgr := App.NewAppManager("test-app")
@@ -180,7 +181,7 @@ func TestAppManager_SafeShutdown(t *testing.T) {
 
 func TestGlobalManager_SafeShutdown(t *testing.T) {
 	fmt.Println("\n=== TestGlobalManager_SafeShutdown ===")
-	resetGlobalState()
+	Common.ResetGlobalState()
 
 	// Create multiple apps with local managers
 	fmt.Println("Creating 2 apps with local managers...")
@@ -229,7 +230,7 @@ func TestGlobalManager_SafeShutdown(t *testing.T) {
 
 func TestGlobalManager_UnsafeShutdown(t *testing.T) {
 	fmt.Println("\n=== TestGlobalManager_UnsafeShutdown ===")
-	resetGlobalState()
+	Common.ResetGlobalState()
 
 	// Create app with long-running goroutines
 	fmt.Println("Creating app with long-running goroutines...")

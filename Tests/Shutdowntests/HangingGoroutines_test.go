@@ -1,4 +1,4 @@
-package Tests
+package Shutdowntests
 
 import (
 	"context"
@@ -9,11 +9,12 @@ import (
 
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/App"
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Local"
+	"github.com/neerajchowdary889/GoRoutinesManager/Tests/Common"
 )
 
 func TestLocalManager_SafeShutdown_WithHangingGoroutines(t *testing.T) {
 	fmt.Println("\n=== TestLocalManager_SafeShutdown_WithHangingGoroutines ===")
-	resetGlobalState()
+	Common.ResetGlobalState()
 
 	// Setup
 	appMgr := App.NewAppManager("test-app")
@@ -97,7 +98,7 @@ func TestLocalManager_SafeShutdown_WithHangingGoroutines(t *testing.T) {
 
 func TestLocalManager_SafeShutdown_AllHanging(t *testing.T) {
 	fmt.Println("\n=== TestLocalManager_SafeShutdown_AllHanging ===")
-	resetGlobalState()
+	Common.ResetGlobalState()
 
 	// Setup
 	appMgr := App.NewAppManager("test-app")

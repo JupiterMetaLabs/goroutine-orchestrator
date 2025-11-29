@@ -1,4 +1,4 @@
-package Tests
+package WaitGrouptests
 
 import (
 	"context"
@@ -9,11 +9,13 @@ import (
 
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/App"
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Local"
+	"github.com/neerajchowdary889/GoRoutinesManager/Tests/Common"
 )
+
 
 func TestFunctionWaitGroup_CreateAndRetrieve(t *testing.T) {
 	fmt.Println("\n=== TestFunctionWaitGroup_CreateAndRetrieve ===")
-	resetGlobalState()
+	Common.ResetGlobalState()
 
 	// Setup
 	appMgr := App.NewAppManager("test-app")
@@ -53,7 +55,7 @@ func TestFunctionWaitGroup_CreateAndRetrieve(t *testing.T) {
 
 func TestFunctionWaitGroup_AutoManagement(t *testing.T) {
 	fmt.Println("\n=== TestFunctionWaitGroup_AutoManagement ===")
-	resetGlobalState()
+	Common.ResetGlobalState()
 
 	// Setup
 	appMgr := App.NewAppManager("test-app")
@@ -108,7 +110,7 @@ func TestFunctionWaitGroup_AutoManagement(t *testing.T) {
 
 func TestFunctionWaitGroup_MultipleFunctions(t *testing.T) {
 	fmt.Println("\n=== TestFunctionWaitGroup_MultipleFunctions ===")
-	resetGlobalState()
+	Common.ResetGlobalState()
 
 	// Setup
 	appMgr := App.NewAppManager("test-app")
@@ -191,7 +193,7 @@ func TestFunctionWaitGroup_MultipleFunctions(t *testing.T) {
 
 func TestFunctionWaitGroup_FanOut(t *testing.T) {
 	fmt.Println("\n=== TestFunctionWaitGroup_FanOut ===")
-	resetGlobalState()
+	Common.ResetGlobalState()
 
 	// Setup
 	appMgr := App.NewAppManager("test-app")
@@ -249,7 +251,7 @@ func TestFunctionWaitGroup_FanOut(t *testing.T) {
 
 func TestFunctionWaitGroup_SelectiveShutdown(t *testing.T) {
 	fmt.Println("\n=== TestFunctionWaitGroup_SelectiveShutdown ===")
-	resetGlobalState()
+	Common.ResetGlobalState()
 
 	// Setup
 	appMgr := App.NewAppManager("test-app")
@@ -349,7 +351,7 @@ func TestFunctionWaitGroup_SelectiveShutdown(t *testing.T) {
 
 func TestFunctionWaitGroup_Timeout(t *testing.T) {
 	fmt.Println("\n=== TestFunctionWaitGroup_Timeout ===")
-	resetGlobalState()
+	Common.ResetGlobalState()
 
 	// Setup
 	appMgr := App.NewAppManager("test-app")

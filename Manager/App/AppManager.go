@@ -2,7 +2,6 @@ package App
 
 import (
 	LocalHelper "github.com/neerajchowdary889/GoRoutinesManager/Helper/Local"
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Global"
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Interface"
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Local"
 	"github.com/neerajchowdary889/GoRoutinesManager/types"
@@ -23,10 +22,9 @@ func (AM *AppManager) CreateApp() (*types.AppManager, error) {
 	// First check if the app manager is already initialized
 	if !types.IsIntilized().App(AM.AppName) {
 		// If Global Manager is Not Intilized, then we need to initialize it
-		globalManager := Global.NewGlobalManager()
-		err := globalManager.Init()
-		if err != nil {
-			return nil, err
+		if !types.IsIntilized().Global() {
+			global := types.NewGlobalManager().SetGlobalMutex().SetGlobalWaitGroup().SetGlobalContext()
+			types.SetGlobalManager(global)
 		}
 	}
 
@@ -53,15 +51,22 @@ func (AM *AppManager) Shutdown(safe bool) error {
 	}
 
 	if safe {
-		// Safe shutdown: wait for all local managers to complete gracefully
-		// Use the AppManager's wait group
+		// Safe shutdown: trigger shutdown on all local managers and wait
 		if appManager.Wg != nil {
 			// Add all local managers to the wait group
 			for _, localMgr := range localManagers {
 				appManager.Wg.Add(1)
 				go func(lm *types.LocalManager) {
 					defer appManager.Wg.Done()
-					// Safe shutdown: wait for local manager's wait group
+
+					// Create a LocalManager instance to call Shutdown
+					lmInstance := Local.NewLocalManager(AM.AppName, lm.LocalName)
+
+					// Call Shutdown on the local manager
+					// This will trigger the improved safe shutdown logic (graceful -> timeout -> force)
+					_ = lmInstance.Shutdown(true)
+
+					// Wait for local manager's wait group (redundant but safe)
 					if lm.Wg != nil {
 						lm.Wg.Wait()
 					}
@@ -73,18 +78,11 @@ func (AM *AppManager) Shutdown(safe bool) error {
 	} else {
 		// Unsafe shutdown: cancel all local manager contexts forcefully
 		for _, localMgr := range localManagers {
-			// Cancel all routine contexts
-			for _, routine := range localMgr.GetRoutines() {
-				cancel := routine.GetCancel()
-				if cancel != nil {
-					cancel()
-				}
-			}
+			// Create a LocalManager instance to call Shutdown
+			lmInstance := Local.NewLocalManager(AM.AppName, localMgr.LocalName)
 
-			// Cancel the local manager's context
-			if localMgr.Cancel != nil {
-				localMgr.Cancel()
-			}
+			// Call Shutdown(false) which handles cancellation
+			_ = lmInstance.Shutdown(false)
 		}
 
 		// Cancel the app manager's context
