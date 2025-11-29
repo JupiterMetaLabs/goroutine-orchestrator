@@ -20,7 +20,12 @@ func SetLocalManager(appName, localName string, local *LocalManager) {
 	if IsIntilized().Local(appName, localName) {
 		return
 	}
-	Global.AppManagers[appName].AddLocalManager(localName, local)
+	// Get the appmanager first
+	appManager, err := Global.GetAppManager(appName)
+	if err != nil {
+		return
+	}
+	appManager.AddLocalManager(localName, local)
 }
 
 func GetGlobalManager() (*GlobalManager, error) {
@@ -38,7 +43,7 @@ func GetAppManager(appName string) (*AppManager, error) {
 }
 
 func GetLocalManager(appName, localName string) (*LocalManager, error) {
-	if IsIntilized().App(appName) {
+	if !IsIntilized().App(appName) {
 		return nil, Errors.ErrAppManagerNotFound
 	}
 	appManager, err := Global.GetAppManager(appName)

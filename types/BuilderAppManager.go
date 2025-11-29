@@ -105,6 +105,26 @@ func (AM *AppManager) SetAppParentContext() *AppManager {
 	return AM
 }
 
+// Create Local Manger function is made private
+// Only accessible throught the appmanager
+// After creating the local manager, it will be added to the app manager
+func (AM *AppManager) CreateLocal(localName string) (*LocalManager, error) {
+	// Get or create the local manager
+	if IsIntilized().Local(AM.AppName, localName) {
+		LM, err := AM.GetLocalManager(localName)
+		if err != nil {
+			return nil, Errors.ErrLocalManagerNotFound
+		}
+		return LM, Errors.WrngLocalManagerAlreadyExists
+	}
+	// Set the parent contex before returning
+	LM := newLocalManager(localName, AM.AppName).SetParentContext(AM.ParentCtx)
+
+	AM.AddLocalManager(LM.LocalName, LM)
+	
+	return LM, nil
+}
+
 // AddLocalManager adds a new local manager to the app manager
 func (AM *AppManager) AddLocalManager(localName string, local *LocalManager) *AppManager {
 	if IsIntilized().Local(AM.AppName, localName) {

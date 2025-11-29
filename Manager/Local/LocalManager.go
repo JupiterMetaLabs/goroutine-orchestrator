@@ -2,6 +2,7 @@ package Local
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -10,43 +11,51 @@ import (
 	"github.com/neerajchowdary889/GoRoutinesManager/types/Errors"
 )
 
-type LocalManager struct {
+type LocalManagerStruct struct {
 	AppName   string
 	LocalName string
 }
 
 func NewLocalManager(appName, localName string) Interface.LocalGoroutineManagerInterface {
-	return &LocalManager{
+	return &LocalManagerStruct{
 		AppName:   appName,
 		LocalName: localName,
 	}
 }
 
-func (LM *LocalManager) CreateLocal(localName string) (*types.LocalManager, error) {
+func (LM *LocalManagerStruct) CreateLocal(localName string) (*types.LocalManager, error) {
 	// First get the app manager
 	appManager, err := types.GetAppManager(LM.AppName)
 	if err != nil {
 		return nil, err
 	}
-	if !types.IsIntilized().Local(appManager.GetAppName(), LM.LocalName) {
-		localManager := types.NewLocalManager(LM.LocalName, appManager.GetAppName()).SetLocalContext().SetLocalMutex().SetLocalWaitGroup()
-		if localManager == nil {
-			return nil, Errors.ErrLocalManagerNotFound
-		}
-		appManager.AddLocalManager(LM.LocalName, localManager)
-		return localManager, nil
+
+	// Directly call the CreateLocal method of the app manager 
+	// CreateLocal function will handle the checking and creation of the local manager
+	localManager, err := appManager.CreateLocal(localName)
+	switch err{
+		case Errors.ErrLocalManagerNotFound:
+			return nil, fmt.Errorf("%w: %s", Errors.ErrLocalManagerNotFound, localName)
+		case Errors.WrngLocalManagerAlreadyExists:
+			// Return the existing local manager and also return error as nil
+			return localManager, nil
+		default:
+			// Fill the structs
+			localManager.SetLocalContext().
+			SetLocalMutex().
+			SetLocalWaitGroup()
 	}
-	return appManager.GetLocalManager(LM.LocalName)
+	return localManager, nil
 }
 
 // Shutdowner
-func (LM *LocalManager) Shutdown(safe bool) error {
+func (LM *LocalManagerStruct) Shutdown(safe bool) error {
 	//TODO
 	return nil
 }
 
 // FunctionShutdowner
-func (LM *LocalManager) ShutdownFunction(functionName string, timeout time.Duration) error {
+func (LM *LocalManagerStruct) ShutdownFunction(functionName string, timeout time.Duration) error {
 	//TODO
 	return nil
 }
@@ -55,7 +64,7 @@ func (LM *LocalManager) ShutdownFunction(functionName string, timeout time.Durat
 // Go spawns a new goroutine, tracks it in the LocalManager, and returns the routine ID.
 // The goroutine is spawned with a context derived from the LocalManager's parent context.
 // The done channel is closed when the goroutine completes.
-func (LM *LocalManager) Go(functionName string, workerFunc func(ctx context.Context) error) error {
+func (LM *LocalManagerStruct) Go(functionName string, workerFunc func(ctx context.Context) error) error {
 	// Get the types.LocalManager instance
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
@@ -64,6 +73,7 @@ func (LM *LocalManager) Go(functionName string, workerFunc func(ctx context.Cont
 	
 	// Create a child context with cancel for this routine
 	routineCtx, cancel := localManager.SpawnChild()
+	
 
 	// Create the done channel (bidirectional, buffered size 1)
 	// This allows non-blocking close even if nothing is reading
@@ -94,7 +104,7 @@ func (LM *LocalManager) Go(functionName string, workerFunc func(ctx context.Cont
 }
 
 // GoroutineLister
-func (LM *LocalManager) GetAllGoroutines() ([]*types.Routine, error) {
+func (LM *LocalManagerStruct) GetAllGoroutines() ([]*types.Routine, error) {
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
 		return nil, err
@@ -109,7 +119,7 @@ func (LM *LocalManager) GetAllGoroutines() ([]*types.Routine, error) {
 	return result, nil
 }
 
-func (LM *LocalManager) GetGoroutineCount() int {
+func (LM *LocalManagerStruct) GetGoroutineCount() int {
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
 		return 0
@@ -118,7 +128,7 @@ func (LM *LocalManager) GetGoroutineCount() int {
 }
 
 // FunctionWaitGroupCreator
-func (LM *LocalManager) NewFunctionWaitGroup(ctx context.Context, functionName string) (*sync.WaitGroup, error) {
+func (LM *LocalManagerStruct) NewFunctionWaitGroup(ctx context.Context, functionName string) (*sync.WaitGroup, error) {
 	//TODO
 	return nil, nil
 }
@@ -127,7 +137,7 @@ func (LM *LocalManager) NewFunctionWaitGroup(ctx context.Context, functionName s
 
 // CancelRoutine cancels a routine's context by its ID.
 // Returns an error if the routine is not found.
-func (LM *LocalManager) CancelRoutine(routineID string) error {
+func (LM *LocalManagerStruct) CancelRoutine(routineID string) error {
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
 		return err
@@ -147,7 +157,7 @@ func (LM *LocalManager) CancelRoutine(routineID string) error {
 
 // WaitForRoutine blocks until the routine's done channel is signaled or the timeout expires.
 // Returns true if the routine completed, false if timeout occurred or routine not found.
-func (LM *LocalManager) WaitForRoutine(routineID string, timeout time.Duration) bool {
+func (LM *LocalManagerStruct) WaitForRoutine(routineID string, timeout time.Duration) bool {
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
 		return false
@@ -173,7 +183,7 @@ func (LM *LocalManager) WaitForRoutine(routineID string, timeout time.Duration) 
 
 // IsRoutineDone checks if a routine's done channel has been signaled.
 // Returns false if routine is not found or done channel is nil.
-func (LM *LocalManager) IsRoutineDone(routineID string) bool {
+func (LM *LocalManagerStruct) IsRoutineDone(routineID string) bool {
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
 		return false
@@ -199,7 +209,7 @@ func (LM *LocalManager) IsRoutineDone(routineID string) bool {
 
 // GetRoutineContext returns the context associated with a routine by ID.
 // Returns context.Background() if routine is not found or context is nil.
-func (LM *LocalManager) GetRoutineContext(routineID string) context.Context {
+func (LM *LocalManagerStruct) GetRoutineContext(routineID string) context.Context {
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
 		return context.Background()
@@ -219,7 +229,7 @@ func (LM *LocalManager) GetRoutineContext(routineID string) context.Context {
 
 // GetRoutineStartedAt returns the timestamp when a routine was started.
 // Returns 0 if routine is not found.
-func (LM *LocalManager) GetRoutineStartedAt(routineID string) int64 {
+func (LM *LocalManagerStruct) GetRoutineStartedAt(routineID string) int64 {
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
 		return 0
@@ -235,7 +245,7 @@ func (LM *LocalManager) GetRoutineStartedAt(routineID string) int64 {
 
 // GetRoutineUptime returns the duration a routine has been running.
 // Returns 0 if routine is not found or not started.
-func (LM *LocalManager) GetRoutineUptime(routineID string) time.Duration {
+func (LM *LocalManagerStruct) GetRoutineUptime(routineID string) time.Duration {
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
 		return 0
@@ -257,7 +267,7 @@ func (LM *LocalManager) GetRoutineUptime(routineID string) time.Duration {
 
 // IsRoutineContextCancelled checks if a routine's context has been cancelled.
 // Returns false if routine is not found or context is nil.
-func (LM *LocalManager) IsRoutineContextCancelled(routineID string) bool {
+func (LM *LocalManagerStruct) IsRoutineContextCancelled(routineID string) bool {
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
 		return false
@@ -283,7 +293,7 @@ func (LM *LocalManager) IsRoutineContextCancelled(routineID string) bool {
 
 // GetRoutine returns a routine by its ID.
 // Returns an error if the routine is not found.
-func (LM *LocalManager) GetRoutine(routineID string) (*types.Routine, error) {
+func (LM *LocalManagerStruct) GetRoutine(routineID string) (*types.Routine, error) {
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
 		return nil, err

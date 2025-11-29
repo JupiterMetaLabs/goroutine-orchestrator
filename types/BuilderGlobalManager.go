@@ -125,7 +125,7 @@ func (GM *GlobalManager) GetAppManager(appName string) (*AppManager, error) {
 	defer GM.UnlockGlobalReadMutex()
 	return GM.AppManagers[appName], nil
 }
-
+ 
 // GetAppManagerCount gets the number of app managers for the global manager
 func (GM *GlobalManager) GetAppManagerCount() int {
 	GM.LockGlobalReadMutex()

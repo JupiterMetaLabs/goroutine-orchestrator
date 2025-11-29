@@ -10,3 +10,8 @@ var (
 	ErrRoutineNotFound       = fmt.Errorf("routine not found")
 	ErrFunctionWgNotFound    = fmt.Errorf("function wg not found")
 )
+
+// this is for warnings
+var (
+	WrngLocalManagerAlreadyExists = fmt.Errorf("local manager already exists")
+)

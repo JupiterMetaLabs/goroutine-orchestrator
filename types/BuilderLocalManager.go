@@ -13,7 +13,7 @@ const (
 	Prefix_LocalManager = "LocalManager."
 )
 
-func NewLocalManager(localName string, appName string) *LocalManager {
+func newLocalManager(localName string, appName string) *LocalManager {
 	if IsIntilized().Local(localName, appName) {
 		LocalManager, err := NewAppManager(appName).GetLocalManager(localName)
 		if err != nil {
@@ -26,8 +26,6 @@ func NewLocalManager(localName string, appName string) *LocalManager {
 		LocalName: localName,
 		Routines:  make(map[string]*Routine),
 	}
-
-	LocalManager.SetParentContext()
 
 	// Add the local manager to the app manager
 	SetLocalManager(appName, localName, LocalManager)
@@ -100,8 +98,8 @@ func (LM *LocalManager) SetLocalWaitGroup() *LocalManager {
 }
 
 // SetParentContext sets the parent context for the local manager
-func (LM *LocalManager) SetParentContext() *LocalManager {
-	LM.ParentCtx, _ = NewAppManager(LM.LocalName).GetAppContext()
+func (LM *LocalManager) SetParentContext(ctx context.Context) *LocalManager {
+	LM.ParentCtx = ctx
 	return LM
 }
 
