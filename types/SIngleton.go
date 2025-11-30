@@ -1,12 +1,20 @@
 package types
 
-import "github.com/neerajchowdary889/GoRoutinesManager/types/Errors"
+import (
+	"sync"
+
+	"github.com/neerajchowdary889/GoRoutinesManager/types/Errors"
+)
+
+var (
+	Once sync.Once
+)
 
 func SetGlobalManager(global *GlobalManager) {
-	if IsIntilized().Global() {
-		return
-	}
-	Global = global
+	// By using this once - we can avoid the race condition thus made thread safe
+	Once.Do(func() {
+		Global = global
+	})
 }
 
 func SetAppManager(appName string, app *AppManager) {

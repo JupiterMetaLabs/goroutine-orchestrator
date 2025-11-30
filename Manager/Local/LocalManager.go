@@ -30,18 +30,18 @@ func (LM *LocalManagerStruct) CreateLocal(localName string) (*types.LocalManager
 		return nil, err
 	}
 
-	// Directly call the CreateLocal method of the app manager 
+	// Directly call the CreateLocal method of the app manager
 	// CreateLocal function will handle the checking and creation of the local manager
 	localManager, err := appManager.CreateLocal(localName)
-	switch err{
-		case Errors.ErrLocalManagerNotFound:
-			return nil, fmt.Errorf("%w: %s", Errors.ErrLocalManagerNotFound, localName)
-		case Errors.WrngLocalManagerAlreadyExists:
-			// Return the existing local manager and also return error as nil
-			return localManager, nil
-		default:
-			// Fill the structs
-			localManager.SetLocalContext().
+	switch err {
+	case Errors.ErrLocalManagerNotFound:
+		return nil, fmt.Errorf("%w: %s", Errors.ErrLocalManagerNotFound, localName)
+	case Errors.WrngLocalManagerAlreadyExists:
+		// Return the existing local manager and also return error as nil
+		return localManager, nil
+	default:
+		// Fill the structs
+		localManager.SetLocalContext().
 			SetLocalMutex().
 			SetLocalWaitGroup()
 	}
@@ -50,13 +50,125 @@ func (LM *LocalManagerStruct) CreateLocal(localName string) (*types.LocalManager
 
 // Shutdowner
 func (LM *LocalManagerStruct) Shutdown(safe bool) error {
-	//TODO
+	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
+	if err != nil {
+		return err
+	}
+
+	if safe {
+		// Safe shutdown: try graceful shutdown first, then force cancel hanging goroutines
+
+		// Step 1: Get all unique function names
+		routines, err := LM.GetAllGoroutines()
+		if err != nil {
+			return err
+		}
+
+		functionNames := make(map[string]bool)
+		for _, routine := range routines {
+			functionNames[routine.GetFunctionName()] = true
+		}
+
+		// Step 2: Try to shutdown each function gracefully with timeout
+		shutdownTimeout := types.ShutdownTimeout
+		for functionName := range functionNames {
+			// Try graceful shutdown with timeout
+			LM.ShutdownFunction(functionName, shutdownTimeout)
+			// Note: ShutdownFunction already handles cancellation and waiting
+		}
+
+		// Step 3: Wait for main wait group with timeout
+		done := make(chan struct{})
+		go func() {
+			if localManager.Wg != nil {
+				localManager.Wg.Wait()
+			}
+			close(done)
+		}()
+
+		// Wait with timeout
+		select {
+		case <-done:
+			// All goroutines completed gracefully
+			return nil
+		case <-time.After(shutdownTimeout):
+			// Timeout - some goroutines are still hanging
+			// Fall through to force cancel
+		}
+
+		// Step 4: Force cancel any remaining hanging goroutines
+		remainingRoutines, err := LM.GetAllGoroutines()
+		if err == nil {
+			for _, routine := range remainingRoutines {
+				cancel := routine.GetCancel()
+				if cancel != nil {
+					cancel()
+				}
+			}
+		}
+
+		// Cancel the local manager's context
+		if localManager.Cancel != nil {
+			localManager.Cancel()
+		}
+
+	} else {
+		// Unsafe shutdown: cancel all contexts immediately
+		// Get all routines and cancel their contexts
+		routines, err := LM.GetAllGoroutines()
+		if err != nil {
+			return err
+		}
+
+		// Cancel all routine contexts
+		for _, routine := range routines {
+			cancel := routine.GetCancel()
+			if cancel != nil {
+				cancel()
+			}
+		}
+
+		// Cancel the local manager's context
+		if localManager.Cancel != nil {
+			localManager.Cancel()
+		}
+	}
+
 	return nil
 }
 
 // FunctionShutdowner
 func (LM *LocalManagerStruct) ShutdownFunction(functionName string, timeout time.Duration) error {
-	//TODO
+	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
+	if err != nil {
+		return err
+	}
+
+	// Get all routines
+	routines, err := LM.GetAllGoroutines()
+	if err != nil {
+		return err
+	}
+
+	// Cancel all routines with this function name
+	for _, routine := range routines {
+		if routine.GetFunctionName() == functionName {
+			cancel := routine.GetCancel()
+			if cancel != nil {
+				cancel()
+			}
+		}
+	}
+
+	// Wait for completion with timeout
+	completed := LM.WaitForFunctionWithTimeout(functionName, timeout)
+	if !completed {
+		return fmt.Errorf("shutdown timeout for function: %s", functionName)
+	}
+
+	// Clean up the wait group
+	localManager.RemoveFunctionWg(functionName)
+
 	return nil
 }
 
@@ -65,15 +177,44 @@ func (LM *LocalManagerStruct) ShutdownFunction(functionName string, timeout time
 // The goroutine is spawned with a context derived from the LocalManager's parent context.
 // The done channel is closed when the goroutine completes.
 func (LM *LocalManagerStruct) Go(functionName string, workerFunc func(ctx context.Context) error) error {
+	return LM.spawnGoroutine(functionName, workerFunc, false)
+}
+
+// GoWithWaitGroup spawns a goroutine and automatically manages the function wait group.
+// This is a convenience method that calls wg.Add(1) before spawning and wg.Done() after completion.
+// Use this when you want automatic wait group management.
+// For manual control, use Go() and manage the wait group yourself via NewFunctionWaitGroup().
+func (LM *LocalManagerStruct) GoWithWaitGroup(functionName string, workerFunc func(ctx context.Context) error) error {
+	return LM.spawnGoroutine(functionName, workerFunc, true)
+}
+
+// spawnGoroutine is the internal implementation for spawning goroutines.
+// If useWaitGroup is true, it automatically manages Add/Done for the function wait group.
+func (LM *LocalManagerStruct) spawnGoroutine(functionName string, workerFunc func(ctx context.Context) error, useWaitGroup bool) error {
 	// Get the types.LocalManager instance
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
 		return err
 	}
-	
+
+	var wg *sync.WaitGroup
+	if useWaitGroup {
+		// Get or create function wait group
+		wg, err = LM.NewFunctionWaitGroup(context.Background(), functionName)
+		if err != nil {
+			return err
+		}
+		// Increment wait group BEFORE spawning goroutine
+		wg.Add(1)
+	}
+
+	// Always add to LocalManager's main wait group for safe shutdown
+	if localManager.Wg != nil {
+		localManager.Wg.Add(1)
+	}
+
 	// Create a child context with cancel for this routine
 	routineCtx, cancel := localManager.SpawnChild()
-	
 
 	// Create the done channel (bidirectional, buffered size 1)
 	// This allows non-blocking close even if nothing is reading
@@ -91,6 +232,14 @@ func (LM *LocalManagerStruct) Go(functionName string, workerFunc func(ctx contex
 	// Spawn the goroutine
 	go func() {
 		defer func() {
+			if useWaitGroup && wg != nil {
+				// Decrement function wait group when routine completes
+				wg.Done()
+			}
+			// Always decrement LocalManager's main wait group
+			if localManager.Wg != nil {
+				localManager.Wg.Done()
+			}
 			// Close the done channel when routine completes
 			// The done channel is buffered (size 1) so this won't block
 			close(doneChan)
@@ -129,174 +278,21 @@ func (LM *LocalManagerStruct) GetGoroutineCount() int {
 
 // FunctionWaitGroupCreator
 func (LM *LocalManagerStruct) NewFunctionWaitGroup(ctx context.Context, functionName string) (*sync.WaitGroup, error) {
-	//TODO
-	return nil, nil
-}
-
-// Routine management methods - these operate on individual routines by ID
-
-// CancelRoutine cancels a routine's context by its ID.
-// Returns an error if the routine is not found.
-func (LM *LocalManagerStruct) CancelRoutine(routineID string) error {
-	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
-	if err != nil {
-		return err
-	}
-
-	routine, err := localManager.GetRoutine(routineID)
-	if err != nil {
-		return err
-	}
-
-	cancel := routine.GetCancel()
-	if cancel != nil {
-		cancel()
-	}
-	return nil
-}
-
-// WaitForRoutine blocks until the routine's done channel is signaled or the timeout expires.
-// Returns true if the routine completed, false if timeout occurred or routine not found.
-func (LM *LocalManagerStruct) WaitForRoutine(routineID string, timeout time.Duration) bool {
-	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
-	if err != nil {
-		return false
-	}
-
-	routine, err := localManager.GetRoutine(routineID)
-	if err != nil {
-		return false
-	}
-
-	doneChan := routine.DoneChan()
-	if doneChan == nil {
-		return false
-	}
-
-	select {
-	case <-doneChan:
-		return true
-	case <-time.After(timeout):
-		return false
-	}
-}
-
-// IsRoutineDone checks if a routine's done channel has been signaled.
-// Returns false if routine is not found or done channel is nil.
-func (LM *LocalManagerStruct) IsRoutineDone(routineID string) bool {
-	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
-	if err != nil {
-		return false
-	}
-
-	routine, err := localManager.GetRoutine(routineID)
-	if err != nil {
-		return false
-	}
-
-	doneChan := routine.DoneChan()
-	if doneChan == nil {
-		return false
-	}
-
-	select {
-	case <-doneChan:
-		return true
-	default:
-		return false
-	}
-}
-
-// GetRoutineContext returns the context associated with a routine by ID.
-// Returns context.Background() if routine is not found or context is nil.
-func (LM *LocalManagerStruct) GetRoutineContext(routineID string) context.Context {
-	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
-	if err != nil {
-		return context.Background()
-	}
-
-	routine, err := localManager.GetRoutine(routineID)
-	if err != nil {
-		return context.Background()
-	}
-
-	ctx := routine.GetContext()
-	if ctx == nil {
-		return context.Background()
-	}
-	return ctx
-}
-
-// GetRoutineStartedAt returns the timestamp when a routine was started.
-// Returns 0 if routine is not found.
-func (LM *LocalManagerStruct) GetRoutineStartedAt(routineID string) int64 {
-	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
-	if err != nil {
-		return 0
-	}
-
-	routine, err := localManager.GetRoutine(routineID)
-	if err != nil {
-		return 0
-	}
-
-	return routine.GetStartedAt()
-}
-
-// GetRoutineUptime returns the duration a routine has been running.
-// Returns 0 if routine is not found or not started.
-func (LM *LocalManagerStruct) GetRoutineUptime(routineID string) time.Duration {
-	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
-	if err != nil {
-		return 0
-	}
-
-	routine, err := localManager.GetRoutine(routineID)
-	if err != nil {
-		return 0
-	}
-
-	startedAt := routine.GetStartedAt()
-	if startedAt == 0 {
-		return 0
-	}
-
-	now := time.Now().UnixNano()
-	return time.Duration(now - startedAt)
-}
-
-// IsRoutineContextCancelled checks if a routine's context has been cancelled.
-// Returns false if routine is not found or context is nil.
-func (LM *LocalManagerStruct) IsRoutineContextCancelled(routineID string) bool {
-	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
-	if err != nil {
-		return false
-	}
-
-	routine, err := localManager.GetRoutine(routineID)
-	if err != nil {
-		return false
-	}
-
-	ctx := routine.GetContext()
-	if ctx == nil {
-		return false
-	}
-
-	select {
-	case <-ctx.Done():
-		return true
-	default:
-		return false
-	}
-}
-
-// GetRoutine returns a routine by its ID.
-// Returns an error if the routine is not found.
-func (LM *LocalManagerStruct) GetRoutine(routineID string) (*types.Routine, error) {
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
 		return nil, err
 	}
-	return localManager.GetRoutine(routineID)
+
+	// Check if wait group already exists
+	wg, err := localManager.GetFunctionWg(functionName)
+	if err == nil {
+		// Already exists, return it
+		return wg, nil
+	}
+
+	// Create new wait group
+	localManager.AddFunctionWg(functionName)
+
+	// Retrieve and return the newly created wait group
+	return localManager.GetFunctionWg(functionName)
 }

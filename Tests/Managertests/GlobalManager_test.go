@@ -1,4 +1,4 @@
-package Tests
+package Managertests
 
 import (
 	"testing"
@@ -7,11 +7,12 @@ import (
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Global"
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Local"
 	"github.com/neerajchowdary889/GoRoutinesManager/types"
+	"github.com/neerajchowdary889/GoRoutinesManager/Tests/Common"
 )
 
 // resetGlobalState resets the global singleton for testing
 func resetGlobalState() {
-	types.Global = nil
+	Common.ResetGlobalState()
 }
 
 func TestGlobalManager_Init(t *testing.T) {

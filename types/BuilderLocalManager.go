@@ -23,8 +23,10 @@ func newLocalManager(localName string, appName string) *LocalManager {
 	}
 
 	LocalManager := &LocalManager{
-		LocalName: localName,
-		Routines:  make(map[string]*Routine),
+		LocalName:   localName,
+		Routines:    make(map[string]*Routine),
+		FunctionWgs: make(map[string]*sync.WaitGroup), // Initialize FunctionWgs map
+		Wg:          &sync.WaitGroup{},                // Initialize wait group for safe shutdown
 	}
 
 	// Add the local manager to the app manager
@@ -71,7 +73,6 @@ func (LM *LocalManager) SetLocalMutex() *LocalManager {
 	LM.LocalMu = &sync.RWMutex{}
 	return LM
 }
-
 
 // >>> Set APIs
 // SetLocalName sets the name of the local manager
@@ -158,7 +159,6 @@ func (LM *LocalManager) RemoveFunctionWg(functionName string) *LocalManager {
 	delete(LM.FunctionWgs, functionName)
 	return LM
 }
-
 
 // >>> Get APIs
 // GetRoutine gets a specific routine for the local manager

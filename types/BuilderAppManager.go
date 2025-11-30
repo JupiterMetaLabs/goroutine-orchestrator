@@ -15,23 +15,24 @@ const (
 
 func NewAppManager(appName string) *AppManager {
 	if IsIntilized().App(appName) {
-		value, err := Global.GetAppManager(appName)
+		appMgr, err := Global.GetAppManager(appName)
 		if err != nil {
 			return nil
 		}
-		return value
+		return appMgr
 	}
 
-	AppManger := &AppManager{
+	appMgr := &AppManager{
 		AppName:       appName,
 		LocalManagers: make(map[string]*LocalManager),
+		Wg:            &sync.WaitGroup{}, // Initialize wait group for safe shutdown
 	}
-	AppManger.SetAppContext()
+	appMgr.SetAppContext()
 
 	// Add the app manager to the global manager
-	SetAppManager(appName, AppManger)
-	
-	return AppManger
+	SetAppManager(appName, appMgr)
+
+	return appMgr
 }
 
 // Lock APIs
@@ -121,7 +122,7 @@ func (AM *AppManager) CreateLocal(localName string) (*LocalManager, error) {
 	LM := newLocalManager(localName, AM.AppName).SetParentContext(AM.ParentCtx)
 
 	AM.AddLocalManager(LM.LocalName, LM)
-	
+
 	return LM, nil
 }
 

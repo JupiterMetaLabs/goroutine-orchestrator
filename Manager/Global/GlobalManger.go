@@ -1,8 +1,9 @@
 package Global
 
 import (
-	LocalHelper "github.com/neerajchowdary889/GoRoutinesManager/Helper/Local"
 	AppHelper "github.com/neerajchowdary889/GoRoutinesManager/Helper/App"
+	LocalHelper "github.com/neerajchowdary889/GoRoutinesManager/Helper/Local"
+	"github.com/neerajchowdary889/GoRoutinesManager/Manager/App"
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Interface"
 	"github.com/neerajchowdary889/GoRoutinesManager/types"
 )
@@ -25,7 +26,58 @@ func (GM *GlobalManager) Init() error {
 }
 
 func (GM *GlobalManager) Shutdown(safe bool) error {
-	// TODO: Implement logic to shutdown all app managers
+	globalMgr, err := types.GetGlobalManager()
+	if err != nil {
+		return err
+	}
+
+	// Get all app managers
+	appManagers, err := GM.GetAllAppManagers()
+	if err != nil {
+		return err
+	}
+
+	if safe {
+		// Safe shutdown: trigger shutdown on all app managers and wait
+		if globalMgr.Wg != nil {
+			// Add all app managers to the wait group
+			for _, appMgr := range appManagers {
+				globalMgr.Wg.Add(1)
+				go func(am *types.AppManager) {
+					defer globalMgr.Wg.Done()
+
+					// Create an AppManager instance to call Shutdown
+					amInstance := App.NewAppManager(am.AppName)
+
+					// Call Shutdown on the app manager
+					// This will trigger AppManager.Shutdown -> LocalManager.Shutdown
+					_ = amInstance.Shutdown(true)
+
+					// Wait for app manager's wait group (redundant but safe)
+					if am.Wg != nil {
+						am.Wg.Wait()
+					}
+				}(appMgr)
+			}
+			// Wait for all app managers to shutdown
+			globalMgr.Wg.Wait()
+		}
+	} else {
+		// Unsafe shutdown: cancel all app manager contexts forcefully
+		for _, appMgr := range appManagers {
+			// Create an AppManager instance to call Shutdown
+			amInstance := App.NewAppManager(appMgr.AppName)
+
+			// Call Shutdown(false) which handles cancellation
+			_ = amInstance.Shutdown(false)
+		}
+
+		// Cancel the global manager's context
+		if globalMgr.Cancel != nil {
+			globalMgr.Cancel()
+		}
+	}
+
 	return nil
 }
 
@@ -116,4 +168,13 @@ func (GM *GlobalManager) GetGoroutineCount() int {
 		}
 	}
 	return i
+}
+
+
+func (GM *GlobalManager) UpdateMetadata(flag string, value interface{}) (*types.Metadata, error) {
+	return GM.UpdateGlobalMetadata(flag, value)
+}
+
+func (GM *GlobalManager) GetMetadata() (*types.Metadata, error) {
+	return GM.GetGlobalMetadata()
 }
