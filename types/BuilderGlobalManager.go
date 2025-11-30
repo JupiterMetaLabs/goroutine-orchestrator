@@ -18,6 +18,9 @@ func NewGlobalManager() *GlobalManager {
 		Wg:          &sync.WaitGroup{}, // Initialize wait group for safe shutdown
 	}
 
+	// Initialize metadata
+	Global.NewMetadata()
+
 	return Global
 }
 
