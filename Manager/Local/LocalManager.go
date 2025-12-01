@@ -81,17 +81,44 @@ func (LM *LocalManagerStruct) Shutdown(safe bool) error {
 	// Record shutdown operation
 	metrics.RecordManagerOperation("local", "shutdown", LM.AppName)
 
+	// Track all function names for cleanup
+	var functionNames map[string]bool
+	var routines []*types.Routine
+
+	// Defer cleanup to ensure it happens even on panic or early return
+	defer func() {
+		// Clean up all function wait groups
+		// Safe to range over nil map - it just does nothing
+		for functionName := range functionNames {
+			localManager.RemoveFunctionWg(functionName)
+		}
+	}()
+
+	// Panic recovery to ensure cleanup happens
+	defer func() {
+		if r := recover(); r != nil {
+			// Ensure cleanup happens even on panic
+			// Safe to range over nil map - it just does nothing
+			for functionName := range functionNames {
+				localManager.RemoveFunctionWg(functionName)
+			}
+			// Re-panic after cleanup
+			panic(r)
+		}
+	}()
+
 	if safe {
 		// Safe shutdown: try graceful shutdown first, then force cancel hanging goroutines
 
-		// Step 1: Get all unique function names
-		routines, err := LM.GetAllGoroutines()
+		// Step 1: Get all routines and function names
+		var err error
+		routines, err = LM.GetAllGoroutines()
 		if err != nil {
 			metrics.RecordOperationError("manager", "shutdown", "get_goroutines_failed")
 			return err
 		}
 
-		functionNames := make(map[string]bool)
+		functionNames = make(map[string]bool)
 		for _, routine := range routines {
 			functionNames[routine.GetFunctionName()] = true
 		}
@@ -100,15 +127,19 @@ func (LM *LocalManagerStruct) Shutdown(safe bool) error {
 		shutdownTimeout := types.ShutdownTimeout
 		for functionName := range functionNames {
 			// Try graceful shutdown with timeout
-			LM.ShutdownFunction(functionName, shutdownTimeout)
-			// Note: ShutdownFunction already handles cancellation and waiting
+			_ = LM.ShutdownFunction(functionName, shutdownTimeout)
+			// Note: ShutdownFunction handles cleanup on success, but we'll clean up all in defer
 		}
 
 		// Step 3: Wait for main wait group with timeout
 		done := make(chan struct{})
 		go func() {
-			if localManager.Wg != nil {
-				localManager.Wg.Wait()
+			// Lock to safely read Wg pointer to avoid race condition
+			localManager.LockAppReadMutex()
+			wg := localManager.Wg
+			localManager.UnlockAppReadMutex()
+			if wg != nil {
+				wg.Wait()
 			}
 			close(done)
 		}()
@@ -117,6 +148,7 @@ func (LM *LocalManagerStruct) Shutdown(safe bool) error {
 		select {
 		case <-done:
 			// All goroutines completed gracefully
+			// Cleanup will happen in defer
 			return nil
 		case <-time.After(shutdownTimeout):
 			// Timeout - some goroutines are still hanging
@@ -146,9 +178,16 @@ func (LM *LocalManagerStruct) Shutdown(safe bool) error {
 	} else {
 		// Unsafe shutdown: cancel all contexts immediately
 		// Get all routines and cancel their contexts
-		routines, err := LM.GetAllGoroutines()
+		var err error
+		routines, err = LM.GetAllGoroutines()
 		if err != nil {
 			return err
+		}
+
+		// Track function names for cleanup
+		functionNames = make(map[string]bool)
+		for _, routine := range routines {
+			functionNames[routine.GetFunctionName()] = true
 		}
 
 		// Cancel all routine contexts and remove from map
@@ -194,9 +233,13 @@ func (LM *LocalManagerStruct) ShutdownFunction(functionName string, timeout time
 		return err
 	}
 
+	// Track routines for this function for cleanup
+	var functionRoutines []*types.Routine
+
 	// Cancel all routines with this function name
 	for _, routine := range routines {
 		if routine.GetFunctionName() == functionName {
+			functionRoutines = append(functionRoutines, routine)
 			cancel := routine.GetCancel()
 			if cancel != nil {
 				cancel()
@@ -207,10 +250,17 @@ func (LM *LocalManagerStruct) ShutdownFunction(functionName string, timeout time
 	// Wait for completion with timeout
 	completed := LM.WaitForFunctionWithTimeout(functionName, timeout)
 	if !completed {
+		// Timeout occurred - clean up routines and wait group
+		for _, routine := range functionRoutines {
+			// Remove routine from map to prevent memory leak
+			localManager.RemoveRoutine(routine, false)
+		}
+		// Clean up the wait group even on timeout
+		localManager.RemoveFunctionWg(functionName)
 		return fmt.Errorf("shutdown timeout for function: %s", functionName)
 	}
 
-	// Clean up the wait group
+	// Clean up the wait group on success
 	localManager.RemoveFunctionWg(functionName)
 
 	return nil
