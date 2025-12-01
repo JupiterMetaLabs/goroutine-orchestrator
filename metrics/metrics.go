@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/neerajchowdary889/GoRoutinesManager/types"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -83,6 +84,33 @@ var (
 	BuildInfo *prometheus.GaugeVec
 )
 
+// Operation Metrics (Event-triggered)
+var (
+	// GoroutineOperationsTotal tracks total goroutine operations
+	GoroutineOperationsTotal *prometheus.CounterVec
+
+	// ManagerOperationsTotal tracks total manager operations
+	ManagerOperationsTotal *prometheus.CounterVec
+
+	// FunctionOperationsTotal tracks total function operations
+	FunctionOperationsTotal *prometheus.CounterVec
+
+	// OperationErrorsTotal tracks errors during operations
+	OperationErrorsTotal *prometheus.CounterVec
+
+	// GoroutineOperationDuration tracks duration of goroutine operations
+	GoroutineOperationDuration *prometheus.HistogramVec
+
+	// ManagerOperationDuration tracks duration of manager operations
+	ManagerOperationDuration *prometheus.HistogramVec
+
+	// ShutdownDuration tracks shutdown operation durations
+	ShutdownDuration *prometheus.HistogramVec
+
+	// ShutdownGoroutinesRemaining tracks goroutines remaining after shutdown
+	ShutdownGoroutinesRemaining *prometheus.GaugeVec
+)
+
 // InitMetrics initializes and registers all Prometheus metrics
 // This function is safe to call multiple times (uses sync.Once)
 func InitMetrics() {
@@ -93,6 +121,7 @@ func InitMetrics() {
 		initGoroutineMetrics()
 		initMetadataMetrics()
 		initSystemMetrics()
+		initOperationMetrics()
 
 		metricsLock.Lock()
 		metricsInitialized = true
@@ -259,10 +288,115 @@ func initSystemMetrics() {
 	)
 }
 
+func initOperationMetrics() {
+	GoroutineOperationsTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "goroutine_manager",
+			Subsystem: "operations",
+			Name:      "goroutine_operations_total",
+			Help:      "Total number of goroutine operations",
+		},
+		[]string{"operation", "app_name", "local_name", "function_name"},
+	)
+
+	ManagerOperationsTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "goroutine_manager",
+			Subsystem: "operations",
+			Name:      "manager_operations_total",
+			Help:      "Total number of manager operations",
+		},
+		[]string{"manager_type", "operation", "app_name"},
+	)
+
+	FunctionOperationsTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "goroutine_manager",
+			Subsystem: "operations",
+			Name:      "function_operations_total",
+			Help:      "Total number of function operations",
+		},
+		[]string{"operation", "app_name", "local_name", "function_name"},
+	)
+
+	OperationErrorsTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "goroutine_manager",
+			Subsystem: "operations",
+			Name:      "errors_total",
+			Help:      "Total number of operation errors",
+		},
+		[]string{"operation_type", "operation", "error_type"},
+	)
+
+	GoroutineOperationDuration = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: "goroutine_manager",
+			Subsystem: "operations",
+			Name:      "goroutine_operation_duration_seconds",
+			Help:      "Duration of goroutine operations in seconds",
+			Buckets:   []float64{.001, .005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5},
+		},
+		[]string{"operation", "app_name", "local_name", "function_name"},
+	)
+
+	ManagerOperationDuration = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: "goroutine_manager",
+			Subsystem: "operations",
+			Name:      "manager_operation_duration_seconds",
+			Help:      "Duration of manager operations in seconds",
+			Buckets:   []float64{.001, .005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10, 30},
+		},
+		[]string{"manager_type", "operation", "app_name"},
+	)
+
+	ShutdownDuration = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: "goroutine_manager",
+			Subsystem: "operations",
+			Name:      "shutdown_duration_seconds",
+			Help:      "Duration of shutdown operations in seconds",
+			Buckets:   []float64{.1, .5, 1, 2.5, 5, 10, 30, 60, 120, 300},
+		},
+		[]string{"manager_type", "shutdown_type", "app_name", "local_name"},
+	)
+
+	ShutdownGoroutinesRemaining = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "goroutine_manager",
+			Subsystem: "operations",
+			Name:      "shutdown_goroutines_remaining",
+			Help:      "Number of goroutines remaining after shutdown timeout",
+		},
+		[]string{"manager_type", "app_name", "local_name"},
+	)
+}
+
+// IsMetricsEnabled checks if metrics are enabled in the metadata
+func IsMetricsEnabled() bool {
+	if !IsInitialized() {
+		return false
+	}
+	// Check if global manager is initialized
+	if !types.IsIntilized().Global() {
+		return false
+	}
+	globalMgr, err := types.GetGlobalManager()
+	if err != nil {
+		return false
+	}
+	metadata := globalMgr.GetMetadata()
+	if metadata == nil {
+		return false
+	}
+	return metadata.Metrics
+}
+
 // RecordGoroutineCompletion records the completion of a goroutine
 // This should be called when a goroutine finishes execution
 func RecordGoroutineCompletion(appName, localName, functionName string, startTime int64) {
-	if !IsInitialized() {
+	if !IsMetricsEnabled() {
 		return
 	}
 
@@ -272,7 +406,7 @@ func RecordGoroutineCompletion(appName, localName, functionName string, startTim
 
 // UpdateGoroutineAge updates the age metric for a specific goroutine
 func UpdateGoroutineAge(appName, localName, functionName, routineID string, startTime int64) {
-	if !IsInitialized() {
+	if !IsMetricsEnabled() {
 		return
 	}
 
@@ -282,7 +416,7 @@ func UpdateGoroutineAge(appName, localName, functionName, routineID string, star
 
 // RemoveGoroutineAge removes the age metric for a specific goroutine
 func RemoveGoroutineAge(appName, localName, functionName, routineID string) {
-	if !IsInitialized() {
+	if !IsMetricsEnabled() {
 		return
 	}
 

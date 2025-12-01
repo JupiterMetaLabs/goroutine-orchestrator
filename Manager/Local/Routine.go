@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/neerajchowdary889/GoRoutinesManager/Context"
+	"github.com/neerajchowdary889/GoRoutinesManager/metrics"
 	"github.com/neerajchowdary889/GoRoutinesManager/types"
 )
 
@@ -15,13 +16,19 @@ import (
 func (LM *LocalManagerStruct) CancelRoutine(routineID string) error {
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
+		metrics.RecordOperationError("goroutine", "cancel", "get_local_manager_failed")
 		return err
 	}
 
 	routine, err := localManager.GetRoutine(routineID)
 	if err != nil {
+		metrics.RecordOperationError("goroutine", "cancel", "routine_not_found")
 		return err
 	}
+
+	functionName := routine.GetFunctionName()
+	// Record operation
+	metrics.RecordGoroutineOperation("cancel", LM.AppName, LM.LocalName, functionName)
 
 	cancel := routine.GetCancel()
 	if cancel != nil {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Interface"
+	"github.com/neerajchowdary889/GoRoutinesManager/metrics"
 	"github.com/neerajchowdary889/GoRoutinesManager/types"
 	"github.com/neerajchowdary889/GoRoutinesManager/types/Errors"
 )
@@ -24,9 +25,16 @@ func NewLocalManager(appName, localName string) Interface.LocalGoroutineManagerI
 }
 
 func (LM *LocalManagerStruct) CreateLocal(localName string) (*types.LocalManager, error) {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		metrics.RecordManagerOperationDuration("local", "create", duration, LM.AppName)
+	}()
+
 	// First get the app manager
 	appManager, err := types.GetAppManager(LM.AppName)
 	if err != nil {
+		metrics.RecordOperationError("manager", "create_local", "get_app_manager_failed")
 		return nil, err
 	}
 
@@ -35,6 +43,7 @@ func (LM *LocalManagerStruct) CreateLocal(localName string) (*types.LocalManager
 	localManager, err := appManager.CreateLocal(localName)
 	switch err {
 	case Errors.ErrLocalManagerNotFound:
+		metrics.RecordOperationError("manager", "create_local", "local_manager_not_found")
 		return nil, fmt.Errorf("%w: %s", Errors.ErrLocalManagerNotFound, localName)
 	case Errors.WrngLocalManagerAlreadyExists:
 		// Return the existing local manager and also return error as nil
@@ -44,16 +53,33 @@ func (LM *LocalManagerStruct) CreateLocal(localName string) (*types.LocalManager
 		localManager.SetLocalContext().
 			SetLocalMutex().
 			SetLocalWaitGroup()
+		// Record operation
+		metrics.RecordManagerOperation("local", "create", LM.AppName)
 	}
 	return localManager, nil
 }
 
 // Shutdowner
 func (LM *LocalManagerStruct) Shutdown(safe bool) error {
+	startTime := time.Now()
+	shutdownType := "unsafe"
+	if safe {
+		shutdownType = "safe"
+	}
+
+	defer func() {
+		duration := time.Since(startTime)
+		metrics.RecordShutdownDuration("local", shutdownType, duration, LM.AppName, LM.LocalName)
+	}()
+
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
+		metrics.RecordOperationError("manager", "shutdown", "get_local_manager_failed")
 		return err
 	}
+
+	// Record shutdown operation
+	metrics.RecordManagerOperation("local", "shutdown", LM.AppName)
 
 	if safe {
 		// Safe shutdown: try graceful shutdown first, then force cancel hanging goroutines
@@ -61,6 +87,7 @@ func (LM *LocalManagerStruct) Shutdown(safe bool) error {
 		// Step 1: Get all unique function names
 		routines, err := LM.GetAllGoroutines()
 		if err != nil {
+			metrics.RecordOperationError("manager", "shutdown", "get_goroutines_failed")
 			return err
 		}
 
@@ -99,6 +126,8 @@ func (LM *LocalManagerStruct) Shutdown(safe bool) error {
 		// Step 4: Force cancel any remaining hanging goroutines
 		remainingRoutines, err := LM.GetAllGoroutines()
 		if err == nil {
+			// Record remaining goroutines after timeout
+			metrics.RecordShutdownGoroutinesRemaining("local", LM.AppName, LM.LocalName, len(remainingRoutines))
 			for _, routine := range remainingRoutines {
 				cancel := routine.GetCancel()
 				if cancel != nil {
@@ -139,14 +168,25 @@ func (LM *LocalManagerStruct) Shutdown(safe bool) error {
 
 // FunctionShutdowner
 func (LM *LocalManagerStruct) ShutdownFunction(functionName string, timeout time.Duration) error {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		metrics.RecordGoroutineOperationDuration("shutdown_function", duration, LM.AppName, LM.LocalName, functionName)
+	}()
+
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
+		metrics.RecordOperationError("function", "shutdown", "get_local_manager_failed")
 		return err
 	}
+
+	// Record operation
+	metrics.RecordFunctionOperation("shutdown", LM.AppName, LM.LocalName, functionName)
 
 	// Get all routines
 	routines, err := LM.GetAllGoroutines()
 	if err != nil {
+		metrics.RecordOperationError("function", "shutdown", "get_goroutines_failed")
 		return err
 	}
 
@@ -229,9 +269,18 @@ func (LM *LocalManagerStruct) spawnGoroutine(functionName string, workerFunc fun
 	// Add routine to LocalManager for tracking
 	localManager.AddRoutine(routine)
 
+	// Record goroutine creation and measure creation duration
+	createStartTime := time.Now()
+	metrics.RecordGoroutineOperation("create", LM.AppName, LM.LocalName, functionName)
+
 	// Spawn the goroutine
 	go func() {
+		startTimeNano := time.Now().UnixNano()
 		defer func() {
+			// Record goroutine completion
+			metrics.RecordGoroutineCompletion(LM.AppName, LM.LocalName, functionName, startTimeNano)
+			metrics.RecordGoroutineOperation("complete", LM.AppName, LM.LocalName, functionName)
+
 			if useWaitGroup && wg != nil {
 				// Decrement function wait group when routine completes
 				wg.Done()
@@ -248,6 +297,10 @@ func (LM *LocalManagerStruct) spawnGoroutine(functionName string, workerFunc fun
 		// Execute the worker function with the routine's context
 		_ = workerFunc(routineCtx)
 	}()
+
+	// Record creation operation duration (time to spawn goroutine, should be very fast)
+	createDuration := time.Since(createStartTime)
+	metrics.RecordGoroutineOperationDuration("create", createDuration, LM.AppName, LM.LocalName, functionName)
 
 	return nil
 }
@@ -280,6 +333,7 @@ func (LM *LocalManagerStruct) GetGoroutineCount() int {
 func (LM *LocalManagerStruct) NewFunctionWaitGroup(ctx context.Context, functionName string) (*sync.WaitGroup, error) {
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
+		metrics.RecordOperationError("function", "wait_group_create", "get_local_manager_failed")
 		return nil, err
 	}
 
@@ -292,6 +346,9 @@ func (LM *LocalManagerStruct) NewFunctionWaitGroup(ctx context.Context, function
 
 	// Create new wait group
 	localManager.AddFunctionWg(functionName)
+
+	// Record operation
+	metrics.RecordFunctionOperation("wait_group_create", LM.AppName, LM.LocalName, functionName)
 
 	// Retrieve and return the newly created wait group
 	return localManager.GetFunctionWg(functionName)

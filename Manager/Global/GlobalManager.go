@@ -1,10 +1,13 @@
 package Global
 
 import (
+	"time"
+
 	AppHelper "github.com/neerajchowdary889/GoRoutinesManager/Helper/App"
 	LocalHelper "github.com/neerajchowdary889/GoRoutinesManager/Helper/Local"
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/App"
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Interface"
+	"github.com/neerajchowdary889/GoRoutinesManager/metrics"
 	"github.com/neerajchowdary889/GoRoutinesManager/types"
 )
 
@@ -15,6 +18,12 @@ func NewGlobalManager() Interface.GlobalGoroutineManagerInterface {
 }
 
 func (GM *GlobalManager) Init() error {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		metrics.RecordManagerOperationDuration("global", "init", duration, "")
+	}()
+
 	if types.IsIntilized().Global() {
 		return nil
 	}
@@ -22,20 +31,39 @@ func (GM *GlobalManager) Init() error {
 	Global := types.NewGlobalManager().SetGlobalMutex().SetGlobalWaitGroup().SetGlobalContext()
 	types.SetGlobalManager(Global)
 
+	// Record operation
+	metrics.RecordManagerOperation("global", "init", "")
+
 	return nil
 }
 
 func (GM *GlobalManager) Shutdown(safe bool) error {
+	startTime := time.Now()
+	shutdownType := "unsafe"
+	if safe {
+		shutdownType = "safe"
+	}
+
+	defer func() {
+		duration := time.Since(startTime)
+		metrics.RecordShutdownDuration("global", shutdownType, duration, "", "")
+	}()
+
 	globalMgr, err := types.GetGlobalManager()
 	if err != nil {
+		metrics.RecordOperationError("manager", "shutdown", "get_global_manager_failed")
 		return err
 	}
 
 	// Get all app managers
 	appManagers, err := GM.GetAllAppManagers()
 	if err != nil {
+		metrics.RecordOperationError("manager", "shutdown", "get_app_managers_failed")
 		return err
 	}
+
+	// Record shutdown operation
+	metrics.RecordManagerOperation("global", "shutdown", "")
 
 	if safe {
 		// Safe shutdown: trigger shutdown on all app managers and wait

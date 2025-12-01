@@ -149,7 +149,7 @@ func TestMetadata_SetMetrics(t *testing.T) {
 
 	// Set metrics
 	testURL := "http://localhost:9090/metrics"
-	result := metadata.SetMetrics(true, testURL)
+	result := metadata.SetMetrics(true, testURL, 5*time.Second)
 
 	// Verify it returns the metadata for chaining
 	if result != metadata {
@@ -206,7 +206,7 @@ func TestMetadata_MethodChaining(t *testing.T) {
 	result := metadata.
 		SetMaxRoutines(200).
 		SetShutdownTimeout(20*time.Second).
-		SetMetrics(true, "http://metrics.example.com")
+		SetMetrics(true, "http://metrics.example.com", 5*time.Second)
 
 	// Verify all values were set
 	if metadata.MaxRoutines != 200 {
