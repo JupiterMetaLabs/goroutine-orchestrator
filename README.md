@@ -44,3 +44,20 @@ Then configure Prometheus to scrape `http://your-app:8080/metrics`.
 For detailed metrics documentation, see [metrics/README.md](metrics/README.md).
 
 For a complete API reference of all metrics functions, see [metrics/API.md](metrics/API.md).
+
+## Grafana Dashboard
+
+A pre-built Grafana dashboard is available for visualizing all metrics:
+
+**Download:**
+```bash
+wget https://raw.githubusercontent.com/neerajchowdary889/GoRoutinesManager/main/metrics/grafana-dashboard.json
+```
+
+**Import into Grafana:**
+1. Go to Dashboards → Import
+2. Upload the JSON file
+3. Select your Prometheus data source
+4. Click Import
+
+For detailed setup instructions, see [metrics/GRAFANA_DASHBOARD.md](metrics/GRAFANA_DASHBOARD.md).
