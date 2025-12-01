@@ -135,9 +135,9 @@ func (LM *LocalManagerStruct) Shutdown(safe bool) error {
 		done := make(chan struct{})
 		go func() {
 			// Lock to safely read Wg pointer to avoid race condition
-			localManager.LockAppReadMutex()
+			localManager.LockLocalReadMutex()
 			wg := localManager.Wg
-			localManager.UnlockAppReadMutex()
+			localManager.UnlockLocalReadMutex()
 			if wg != nil {
 				wg.Wait()
 			}
