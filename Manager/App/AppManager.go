@@ -8,7 +8,7 @@ import (
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Local"
 	"github.com/neerajchowdary889/GoRoutinesManager/metrics"
 	"github.com/neerajchowdary889/GoRoutinesManager/types"
-	"github.com/neerajchowdary889/GoRoutinesManager/types/Errors"
+	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Errors"
 )
 
 type AppManager struct {
@@ -202,4 +202,12 @@ func (AM *AppManager) GetLocalManagerCount() int {
 		return 0
 	}
 	return appManager.GetLocalManagerCount()
+}
+
+func (AM *AppManager) GetLocalManagerByName(localName string) (*types.LocalManager, error) {
+	appManager, err := types.GetAppManager(AM.AppName)
+	if err != nil {
+		return nil, err
+	}
+	return appManager.GetLocalManager(localName)
 }

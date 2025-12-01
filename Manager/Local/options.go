@@ -25,7 +25,7 @@ type goroutineOptions struct {
 func defaultGoroutineOptions() *goroutineOptions {
 	return &goroutineOptions{
 		timeout:       nil,
-		panicRecovery: false,
+		panicRecovery: true, // Enabled by default for production safety
 		waitGroupName: "",
 	}
 }
@@ -39,9 +39,11 @@ func WithTimeout(timeout time.Duration) Option {
 	}
 }
 
-// WithPanicRecovery enables panic recovery for the goroutine.
+// WithPanicRecovery enables or disables panic recovery for the goroutine.
+// Panic recovery is enabled by default for production safety.
 // When enabled, panics in the worker function will be recovered,
-// logged, and the goroutine will complete normally with cleanup.
+// logged via metrics, and the goroutine will complete normally with cleanup.
+// Set to false only if you want panics to crash the goroutine (not recommended).
 func WithPanicRecovery(enabled bool) Option {
 	return func(opts *goroutineOptions) {
 		opts.panicRecovery = enabled

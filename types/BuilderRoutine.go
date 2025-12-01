@@ -23,7 +23,7 @@ const (
 // (<-chan struct{}) in the struct. The channel should be closed (not sent to) when the
 // routine completes. Context and Cancel should be set via SetContext() and SetCancel()
 // when the routine is actually spawned.
-func NewGoRoutine(functionName string) *Routine {
+func(LM *LocalManager) NewGoRoutine(functionName string) *Routine {
 	// Create buffered channel (size 1) for non-blocking signaling
 	// This allows the channel to be closed without blocking if nothing is reading
 	done := make(chan struct{}, 1)
@@ -36,7 +36,8 @@ func NewGoRoutine(functionName string) *Routine {
 		SetID(Helper.NewUUID()).            // Fast UUID generation (~40ns)
 		SetDone(done).                      // Channel assignment (negligible cost)
 		SetStartedAt(time.Now().UnixNano()) // Timestamp (fast, ~10ns)
-
+		
+	LM.AddRoutine(routine)
 	return routine
 }
 
@@ -51,6 +52,7 @@ func (r *Routine) SetFunctionName(functionName string) *Routine {
 	r.FunctionName = functionName
 	return r
 }
+
 
 // SetContext sets the context for the routine
 func (r *Routine) SetContext(ctx context.Context) *Routine {
@@ -103,3 +105,4 @@ func (r *Routine) GetCancel() context.CancelFunc {
 func (r *Routine) GetStartedAt() int64 {
 	return r.StartedAt
 }
+

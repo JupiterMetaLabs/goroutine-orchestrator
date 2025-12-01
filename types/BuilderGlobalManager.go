@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/neerajchowdary889/GoRoutinesManager/Context"
-	"github.com/neerajchowdary889/GoRoutinesManager/types/Errors"
+	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Errors"
 )
 
 func NewGlobalManager() *GlobalManager {

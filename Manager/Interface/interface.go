@@ -55,6 +55,11 @@ type LocalManagerLister interface {
 	GetLocalManagerCount() int
 }
 
+// LocalManagerGetter gets a local manager by name
+type LocalManagerGetter interface {
+	GetLocalManagerByName(localName string) (*types.LocalManager, error)
+}
+
 // AppManagerLister lists all app managers
 type AppManagerLister interface {
 	GetAllAppManagers() ([]*types.AppManager, error)
@@ -92,6 +97,7 @@ type RoutineManager interface {
 	GetRoutineUptime(routineID string) time.Duration
 	IsRoutineContextCancelled(routineID string) bool
 	GetRoutine(routineID string) (*types.Routine, error)
+	GetRoutinesByFunctionName(functionName string) ([]*types.Routine, error)
 }
 
 // ----------------------
@@ -121,6 +127,8 @@ type AppGoroutineManagerInterface interface {
 	LocalManagerLister
 
 	GoroutineLister
+
+	LocalManagerGetter
 }
 
 // LocalGoroutineManagerInterface defines the complete interface for local manager
@@ -132,8 +140,9 @@ type LocalGoroutineManagerInterface interface {
 
 	GoroutineSpawner
 
-	GoroutineLister
+	RoutineManager
 
+	GoroutineLister
 	FunctionWaitGroupCreator
 	FunctionWaitGroupManager
 }

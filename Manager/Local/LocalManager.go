@@ -9,7 +9,7 @@ import (
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Interface"
 	"github.com/neerajchowdary889/GoRoutinesManager/metrics"
 	"github.com/neerajchowdary889/GoRoutinesManager/types"
-	"github.com/neerajchowdary889/GoRoutinesManager/types/Errors"
+	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Errors"
 )
 
 type LocalManagerStruct struct {
@@ -341,13 +341,10 @@ func (LM *LocalManagerStruct) spawnGoroutine(functionName string, workerFunc fun
 	doneChan := make(chan struct{}, 1)
 
 	// Create a new Routine instance
-	routine := types.NewGoRoutine(functionName).
+	routine := localManager.NewGoRoutine(functionName).
 		SetContext(routineCtx).
 		SetCancel(cancel).
 		SetDone(doneChan) // Override the channel created in NewGoRoutine
-
-	// Add routine to LocalManager for tracking
-	localManager.AddRoutine(routine)
 
 	// Record goroutine creation and measure creation duration
 	createStartTime := time.Now()
@@ -357,10 +354,10 @@ func (LM *LocalManagerStruct) spawnGoroutine(functionName string, workerFunc fun
 	go func() {
 		startTimeNano := time.Now().UnixNano()
 		defer func() {
-			// Handle panic recovery if enabled
+			// Handle panic recovery (enabled by default for production safety)
 			if opts.panicRecovery {
 				if r := recover(); r != nil {
-					// Log panic details
+					// Log panic details via metrics
 					metrics.RecordOperationError("goroutine", "panic", fmt.Sprintf("function: %s, panic: %v", functionName, r))
 					// Panic is recovered, continue with normal cleanup
 				}
@@ -398,7 +395,7 @@ func (LM *LocalManagerStruct) spawnGoroutine(functionName string, workerFunc fun
 		}()
 
 		// Execute the worker function with the routine's context
-		// If panic recovery is enabled, panics will be caught in defer above
+		// Panics will be caught and recovered by the defer block above (enabled by default)
 		_ = workerFunc(routineCtx)
 	}()
 
@@ -456,4 +453,20 @@ func (LM *LocalManagerStruct) NewFunctionWaitGroup(ctx context.Context, function
 
 	// Retrieve and return the newly created wait group
 	return localManager.GetFunctionWg(functionName)
+}
+
+// Multiple go routines can have same function name
+// This function is to get the routines by function name
+func (LM *LocalManagerStruct) GetRoutinesByFunctionName(functionName string) ([]*types.Routine, error) {
+	result := make([]*types.Routine, 0)
+	routines, err := LM.GetAllGoroutines()
+	if err != nil {
+		return nil, err
+	}
+	for _, routine := range routines {
+		if routine.GetFunctionName() == functionName {
+			result = append(result, routine)
+		}
+	}
+	return result, nil	
 }
