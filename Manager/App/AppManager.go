@@ -1,11 +1,14 @@
 package App
 
 import (
+	"time"
+
 	LocalHelper "github.com/neerajchowdary889/GoRoutinesManager/Helper/Local"
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Interface"
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Local"
+	"github.com/neerajchowdary889/GoRoutinesManager/metrics"
 	"github.com/neerajchowdary889/GoRoutinesManager/types"
-	"github.com/neerajchowdary889/GoRoutinesManager/types/Errors"
+	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Errors"
 )
 
 type AppManager struct {
@@ -19,6 +22,12 @@ func NewAppManager(Appname string) Interface.AppGoroutineManagerInterface {
 }
 
 func (AM *AppManager) CreateApp() (*types.AppManager, error) {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		metrics.RecordManagerOperationDuration("app", "create", duration, AM.AppName)
+	}()
+
 	// First check if the app manager is already initialized
 	if !types.IsIntilized().App(AM.AppName) {
 		// If Global Manager is Not Intilized, then we need to initialize it
@@ -35,20 +44,39 @@ func (AM *AppManager) CreateApp() (*types.AppManager, error) {
 	app := types.NewAppManager(AM.AppName).SetAppContext().SetAppMutex()
 	types.SetAppManager(AM.AppName, app)
 
+	// Record operation
+	metrics.RecordManagerOperation("app", "create", AM.AppName)
+
 	return app, nil
 }
 
 func (AM *AppManager) Shutdown(safe bool) error {
+	startTime := time.Now()
+	shutdownType := "unsafe"
+	if safe {
+		shutdownType = "safe"
+	}
+
+	defer func() {
+		duration := time.Since(startTime)
+		metrics.RecordShutdownDuration("app", shutdownType, duration, AM.AppName, "")
+	}()
+
 	appManager, err := types.GetAppManager(AM.AppName)
 	if err != nil {
+		metrics.RecordOperationError("manager", "shutdown", "get_app_manager_failed")
 		return err
 	}
 
 	// Get all local managers
 	localManagers, err := AM.GetAllLocalManagers()
 	if err != nil {
+		metrics.RecordOperationError("manager", "shutdown", "get_local_managers_failed")
 		return err
 	}
+
+	// Record shutdown operation
+	metrics.RecordManagerOperation("app", "shutdown", AM.AppName)
 
 	if safe {
 		// Safe shutdown: trigger shutdown on all local managers and wait
@@ -95,15 +123,27 @@ func (AM *AppManager) Shutdown(safe bool) error {
 }
 
 func (AM *AppManager) CreateLocal(localName string) (*types.LocalManager, error) {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		metrics.RecordManagerOperationDuration("local", "create", duration, AM.AppName)
+	}()
+
 	// Use the LocalManagerCreator interface to create a new local manager
 	localManager := Local.NewLocalManager(AM.AppName, localName)
 	if localManager == nil {
+		metrics.RecordOperationError("manager", "create_local", "local_manager_not_found")
 		return nil, Errors.ErrLocalManagerNotFound
 	}
 	Manager, err := localManager.CreateLocal(localName)
 	if err != nil {
+		metrics.RecordOperationError("manager", "create_local", "create_failed")
 		return nil, err
 	}
+
+	// Record operation
+	metrics.RecordManagerOperation("local", "create", AM.AppName)
+
 	return Manager, nil
 }
 
@@ -162,4 +202,12 @@ func (AM *AppManager) GetLocalManagerCount() int {
 		return 0
 	}
 	return appManager.GetLocalManagerCount()
+}
+
+func (AM *AppManager) GetLocalManagerByName(localName string) (*types.LocalManager, error) {
+	appManager, err := types.GetAppManager(AM.AppName)
+	if err != nil {
+		return nil, err
+	}
+	return appManager.GetLocalManager(localName)
 }

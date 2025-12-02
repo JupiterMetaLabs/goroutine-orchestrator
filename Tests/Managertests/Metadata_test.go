@@ -6,6 +6,7 @@ import (
 
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Global"
 	"github.com/neerajchowdary889/GoRoutinesManager/Tests/Common"
+	"github.com/neerajchowdary889/GoRoutinesManager/metrics"
 	"github.com/neerajchowdary889/GoRoutinesManager/types"
 )
 
@@ -148,7 +149,7 @@ func TestMetadata_SetMetrics(t *testing.T) {
 
 	// Set metrics
 	testURL := "http://localhost:9090/metrics"
-	result := metadata.SetMetrics(true, testURL)
+	result := metadata.SetMetrics(true, testURL, 5*time.Second)
 
 	// Verify it returns the metadata for chaining
 	if result != metadata {
@@ -205,7 +206,7 @@ func TestMetadata_MethodChaining(t *testing.T) {
 	result := metadata.
 		SetMaxRoutines(200).
 		SetShutdownTimeout(20*time.Second).
-		SetMetrics(true, "http://metrics.example.com")
+		SetMetrics(true, "http://metrics.example.com", 5*time.Second)
 
 	// Verify all values were set
 	if metadata.MaxRoutines != 200 {
@@ -510,5 +511,48 @@ func TestMetadata_ComplexScenario(t *testing.T) {
 	// Verify it's the same instance
 	if metadata != retrievedMetadata {
 		t.Error("Metadata instances should be the same")
+	}
+}
+
+// TestGlobalManager_MetricsServer_Integration tests that the metrics server starts and stops
+func TestGlobalManager_MetricsServer_Integration(t *testing.T) {
+	Common.ResetGlobalState()
+
+	gm := Global.NewGlobalManager()
+	gm.Init()
+
+	// Ensure server is not running initially
+	if metrics.IsServerRunning() {
+		t.Error("Metrics server should not be running initially")
+	}
+
+	// Enable metrics with a URL
+	// Use a port that is unlikely to be in use
+	testURL := ":19091"
+	_, err := gm.UpdateMetadata(Global.SET_METRICS_URL, testURL)
+	if err != nil {
+		t.Fatalf("Failed to enable metrics: %v", err)
+	}
+
+	// Allow some time for server to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify server is running
+	if !metrics.IsServerRunning() {
+		t.Error("Metrics server should be running after enabling")
+	}
+
+	// Disable metrics
+	_, err = gm.UpdateMetadata(Global.SET_METRICS_URL, []interface{}{false, ""})
+	if err != nil {
+		t.Fatalf("Failed to disable metrics: %v", err)
+	}
+
+	// Allow some time for server to stop
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify server is stopped
+	if metrics.IsServerRunning() {
+		t.Error("Metrics server should be stopped after disabling")
 	}
 }

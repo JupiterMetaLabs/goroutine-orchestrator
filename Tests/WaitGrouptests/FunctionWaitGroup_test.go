@@ -74,11 +74,11 @@ func TestFunctionWaitGroup_AutoManagement(t *testing.T) {
 	fmt.Println("Spawning 10 goroutines with function name 'worker'...")
 	var counter atomic.Int32
 	for i := 0; i < 10; i++ {
-		err = localMgr.GoWithWaitGroup("worker", func(ctx context.Context) error {
+		err = localMgr.Go("worker", func(ctx context.Context) error {
 			counter.Add(1)
 			time.Sleep(100 * time.Millisecond)
 			return nil
-		})
+		}, Local.AddToWaitGroup("worker"))
 		if err != nil {
 			t.Fatalf("GoWithWaitGroup() failed: %v", err)
 		}
@@ -132,31 +132,31 @@ func TestFunctionWaitGroup_MultipleFunctions(t *testing.T) {
 
 	// Function A - 5 goroutines (fast)
 	for i := 0; i < 5; i++ {
-		localMgr.GoWithWaitGroup("functionA", func(ctx context.Context) error {
+		localMgr.Go("functionA", func(ctx context.Context) error {
 			counterA.Add(1)
 			time.Sleep(50 * time.Millisecond)
 			return nil
-		})
+		}, Local.AddToWaitGroup("functionA"))
 	}
 	fmt.Println("  ✓ FunctionA: 5 goroutines spawned")
 
 	// Function B - 3 goroutines (medium)
 	for i := 0; i < 3; i++ {
-		localMgr.GoWithWaitGroup("functionB", func(ctx context.Context) error {
+		localMgr.Go("functionB", func(ctx context.Context) error {
 			counterB.Add(1)
 			time.Sleep(100 * time.Millisecond)
 			return nil
-		})
+		}, Local.AddToWaitGroup("functionB"))
 	}
 	fmt.Println("  ✓ FunctionB: 3 goroutines spawned")
 
 	// Function C - 2 goroutines (slow)
 	for i := 0; i < 2; i++ {
-		localMgr.GoWithWaitGroup("functionC", func(ctx context.Context) error {
+		localMgr.Go("functionC", func(ctx context.Context) error {
 			counterC.Add(1)
 			time.Sleep(150 * time.Millisecond)
 			return nil
-		})
+		}, Local.AddToWaitGroup("functionC"))
 	}
 	fmt.Println("  ✓ FunctionC: 2 goroutines spawned")
 
@@ -217,7 +217,7 @@ func TestFunctionWaitGroup_FanOut(t *testing.T) {
 
 	for i := 0; i < 20; i++ {
 		workerID := i
-		err = localMgr.GoWithWaitGroup("worker", func(ctx context.Context) error {
+		err = localMgr.Go("worker", func(ctx context.Context) error {
 			// Each worker processes some items
 			for j := 0; j < itemsPerWorker; j++ {
 				processed.Add(1)
@@ -225,7 +225,7 @@ func TestFunctionWaitGroup_FanOut(t *testing.T) {
 			}
 			fmt.Printf("  Worker %2d completed %d items\n", workerID, itemsPerWorker)
 			return nil
-		})
+		}, Local.AddToWaitGroup("worker"))
 		if err != nil {
 			t.Fatalf("GoWithWaitGroup() failed: %v", err)
 		}
@@ -273,7 +273,7 @@ func TestFunctionWaitGroup_SelectiveShutdown(t *testing.T) {
 
 	// Function A - will be shutdown
 	for i := 0; i < 3; i++ {
-		localMgr.GoWithWaitGroup("functionA", func(ctx context.Context) error {
+		localMgr.Go("functionA", func(ctx context.Context) error {
 			for {
 				select {
 				case <-ctx.Done():
@@ -283,12 +283,12 @@ func TestFunctionWaitGroup_SelectiveShutdown(t *testing.T) {
 					// Keep running
 				}
 			}
-		})
+		}, Local.AddToWaitGroup("functionA"))
 	}
 
 	// Function B - will be shutdown
 	for i := 0; i < 2; i++ {
-		localMgr.GoWithWaitGroup("functionB", func(ctx context.Context) error {
+		localMgr.Go("functionB", func(ctx context.Context) error {
 			for {
 				select {
 				case <-ctx.Done():
@@ -298,12 +298,12 @@ func TestFunctionWaitGroup_SelectiveShutdown(t *testing.T) {
 					// Keep running
 				}
 			}
-		})
+		}, Local.AddToWaitGroup("functionB"))
 	}
 
 	// Function C - will keep running
 	for i := 0; i < 2; i++ {
-		localMgr.GoWithWaitGroup("functionC", func(ctx context.Context) error {
+		localMgr.Go("functionC", func(ctx context.Context) error {
 			for {
 				select {
 				case <-ctx.Done():
@@ -313,7 +313,7 @@ func TestFunctionWaitGroup_SelectiveShutdown(t *testing.T) {
 					// Keep running
 				}
 			}
-		})
+		}, Local.AddToWaitGroup("functionC"))
 	}
 
 	fmt.Println("✓ All goroutines spawned")
@@ -368,10 +368,10 @@ func TestFunctionWaitGroup_Timeout(t *testing.T) {
 
 	// Spawn long-running goroutine
 	fmt.Println("Spawning long-running goroutine...")
-	localMgr.GoWithWaitGroup("slowWorker", func(ctx context.Context) error {
+	localMgr.Go("slowWorker", func(ctx context.Context) error {
 		time.Sleep(2 * time.Second)
 		return nil
-	})
+	}, Local.AddToWaitGroup("slowWorker"))
 
 	// Wait with short timeout
 	fmt.Println("Waiting with 100ms timeout (should timeout)...")

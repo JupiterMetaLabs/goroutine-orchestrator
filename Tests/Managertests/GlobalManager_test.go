@@ -177,11 +177,8 @@ func TestGlobalManager_GetAllGoroutines(t *testing.T) {
 	app.AddLocalManager("local1", local)
 
 	// Create routines
-	routine1 := types.NewGoRoutine("func1")
-	routine2 := types.NewGoRoutine("func2")
-
-	local.AddRoutine(routine1)
-	local.AddRoutine(routine2)
+	local.NewGoRoutine("func1")
+	local.NewGoRoutine("func2")
 
 	// Get all goroutines
 	routines, err := gm.GetAllGoroutines()
@@ -214,13 +211,9 @@ func TestGlobalManager_GetGoroutineCount(t *testing.T) {
 	local, _ := localMgr.CreateLocal("local1")
 	app.AddLocalManager("local1", local)
 
-	routine1 := types.NewGoRoutine("func1")
-	routine2 := types.NewGoRoutine("func2")
-	routine3 := types.NewGoRoutine("func3")
-
-	local.AddRoutine(routine1)
-	local.AddRoutine(routine2)
-	local.AddRoutine(routine3)
+	local.NewGoRoutine("func1")
+	local.NewGoRoutine("func2")
+	local.NewGoRoutine("func3")
 
 	// Now should be 3
 	count = gm.GetGoroutineCount()
@@ -249,9 +242,9 @@ func TestGlobalManager_MultipleAppsAndLocals(t *testing.T) {
 	app1.AddLocalManager("local2", local1_2)
 
 	// Add routines to app1 locals
-	local1_1.AddRoutine(types.NewGoRoutine("func1"))
-	local1_1.AddRoutine(types.NewGoRoutine("func2"))
-	local1_2.AddRoutine(types.NewGoRoutine("func3"))
+	local1_1.NewGoRoutine("func1")
+	local1_1.NewGoRoutine("func2")
+	local1_2.NewGoRoutine("func3")
 
 	// App2 with 1 local
 	app2Mgr := App.NewAppManager("app2")
@@ -262,8 +255,8 @@ func TestGlobalManager_MultipleAppsAndLocals(t *testing.T) {
 	app2.AddLocalManager("local1", local2_1)
 
 	// Add routines to app2 local
-	local2_1.AddRoutine(types.NewGoRoutine("func4"))
-	local2_1.AddRoutine(types.NewGoRoutine("func5"))
+	local2_1.NewGoRoutine("func4")
+	local2_1.NewGoRoutine("func5")
 
 	// Verify counts
 	appCount := gm.GetAppManagerCount()

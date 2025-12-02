@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/neerajchowdary889/GoRoutinesManager/Context"
+	"github.com/neerajchowdary889/GoRoutinesManager/metrics"
 	"github.com/neerajchowdary889/GoRoutinesManager/types"
 )
 
@@ -15,13 +16,19 @@ import (
 func (LM *LocalManagerStruct) CancelRoutine(routineID string) error {
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
+		metrics.RecordOperationError("goroutine", "cancel", "get_local_manager_failed")
 		return err
 	}
 
 	routine, err := localManager.GetRoutine(routineID)
 	if err != nil {
+		metrics.RecordOperationError("goroutine", "cancel", "routine_not_found")
 		return err
 	}
+
+	functionName := routine.GetFunctionName()
+	// Record operation
+	metrics.RecordGoroutineOperation("cancel", LM.AppName, LM.LocalName, functionName)
 
 	cancel := routine.GetCancel()
 	if cancel != nil {
@@ -198,18 +205,41 @@ func (LM *LocalManagerStruct) WaitForFunction(functionName string) error {
 
 // WaitForFunctionWithTimeout waits for all goroutines of a function with a timeout.
 // Returns true if all completed, false if timeout occurred.
+//
+// Note: If timeout occurs, the internal goroutine will continue waiting until
+// the WaitGroup completes. This is acceptable because:
+// 1. The goroutine will eventually exit when WaitGroup is done
+// 2. No resources are held except memory
+// 3. The function correctly returns false on timeout
 func (LM *LocalManagerStruct) WaitForFunctionWithTimeout(functionName string, timeout time.Duration) bool {
-	done := make(chan struct{})
+	done := make(chan struct{}, 1) // Buffered to prevent goroutine leak if timeout occurs
 
 	go func() {
-		LM.WaitForFunction(functionName)
-		close(done)
+		// WaitForFunction blocks on wg.Wait() which cannot be cancelled.
+		// If timeout occurs, this goroutine will continue running until
+		// the WaitGroup completes (when all goroutines finish).
+		// This is acceptable - the goroutine will eventually exit.
+		err := LM.WaitForFunction(functionName)
+		if err == nil {
+			// WaitGroup completed - signal success (non-blocking due to buffered channel)
+			select {
+			case done <- struct{}{}:
+			default:
+				// Timeout already occurred, but WaitGroup completed - no-op
+			}
+		}
+		// Note: We don't close the channel here because the select might
+		// have already returned on timeout. Closing would cause a panic
+		// if someone tries to read from it again.
 	}()
 
 	select {
 	case <-done:
 		return true
 	case <-time.After(timeout):
+		// Timeout occurred - return false immediately
+		// The goroutine will continue running until WaitGroup completes,
+		// but this is acceptable as it will eventually exit.
 		return false
 	}
 }

@@ -33,18 +33,18 @@ func TestLocalManager_SafeShutdown_WithHangingGoroutines(t *testing.T) {
 	fmt.Println("Spawning 3 normal goroutines...")
 	var normalCompleted atomic.Int32
 	for i := 0; i < 3; i++ {
-		localMgr.GoWithWaitGroup("fast-worker", func(ctx context.Context) error {
+		localMgr.Go("fast-worker", func(ctx context.Context) error {
 			normalCompleted.Add(1)
 			time.Sleep(100 * time.Millisecond)
 			return nil
-		})
+		}, Local.AddToWaitGroup("fast-worker"))
 	}
 
 	// Spawn hanging goroutines that run forever (but respect context cancellation)
 	fmt.Println("Spawning 2 hanging goroutines...")
 	var hangingCancelled atomic.Int32
 	for i := 0; i < 2; i++ {
-		localMgr.GoWithWaitGroup("hanging-worker", func(ctx context.Context) error {
+		localMgr.Go("hanging-worker", func(ctx context.Context) error {
 			select {
 			case <-ctx.Done():
 				hangingCancelled.Add(1)
@@ -53,7 +53,7 @@ func TestLocalManager_SafeShutdown_WithHangingGoroutines(t *testing.T) {
 				// This would run forever without cancellation
 				return nil
 			}
-		})
+		}, Local.AddToWaitGroup("hanging-worker"))
 	}
 
 	fmt.Println("✓ All goroutines spawned (3 normal + 2 hanging)")
@@ -117,7 +117,7 @@ func TestLocalManager_SafeShutdown_AllHanging(t *testing.T) {
 	fmt.Println("Spawning 5 hanging goroutines...")
 	var cancelled atomic.Int32
 	for i := 0; i < 5; i++ {
-		localMgr.GoWithWaitGroup("infinite-loop", func(ctx context.Context) error {
+		localMgr.Go("infinite-loop", func(ctx context.Context) error {
 			for {
 				select {
 				case <-ctx.Done():
@@ -127,7 +127,7 @@ func TestLocalManager_SafeShutdown_AllHanging(t *testing.T) {
 					// Keep looping
 				}
 			}
-		})
+		}, Local.AddToWaitGroup("infinite-loop"))
 	}
 	fmt.Println("✓ All hanging goroutines spawned")
 

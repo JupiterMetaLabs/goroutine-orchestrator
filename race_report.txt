@@ -1,0 +1,405 @@
+=== RUN   TestAppManager_CreateApp
+Initialized app-level context for: AppManager.test-app
+--- PASS: TestAppManager_CreateApp (0.30s)
+=== RUN   TestAppManager_CreateApp_Idempotent
+--- PASS: TestAppManager_CreateApp_Idempotent (0.30s)
+=== RUN   TestAppManager_CreateApp_AutoInitGlobal
+--- PASS: TestAppManager_CreateApp_AutoInitGlobal (0.30s)
+=== RUN   TestAppManager_GetAllLocalManagers
+Initialized app-level context for: LocalManager.local1
+Initialized app-level context for: LocalManager.local2
+--- PASS: TestAppManager_GetAllLocalManagers (0.30s)
+=== RUN   TestAppManager_GetLocalManagerCount
+Initialized app-level context for: LocalManager.local3
+--- PASS: TestAppManager_GetLocalManagerCount (0.30s)
+=== RUN   TestAppManager_GetGoroutineCount
+--- PASS: TestAppManager_GetGoroutineCount (0.30s)
+=== RUN   TestAppManager_GetAllGoroutines
+--- PASS: TestAppManager_GetAllGoroutines (0.30s)
+=== RUN   TestAppManager_BeforeCreateApp
+--- PASS: TestAppManager_BeforeCreateApp (0.30s)
+=== RUN   TestAppManager_MultipleApps
+Initialized app-level context for: AppManager.app1
+Initialized app-level context for: AppManager.app2
+--- PASS: TestAppManager_MultipleApps (0.30s)
+=== RUN   TestGlobalManager_Init
+--- PASS: TestGlobalManager_Init (0.30s)
+=== RUN   TestGlobalManager_GetAllAppManagers_Empty
+--- PASS: TestGlobalManager_GetAllAppManagers_Empty (0.30s)
+=== RUN   TestGlobalManager_GetAppManagerCount
+--- PASS: TestGlobalManager_GetAppManagerCount (0.30s)
+=== RUN   TestGlobalManager_GetAllAppManagers_WithApps
+--- PASS: TestGlobalManager_GetAllAppManagers_WithApps (0.30s)
+=== RUN   TestGlobalManager_GetAllLocalManagers
+--- PASS: TestGlobalManager_GetAllLocalManagers (0.30s)
+=== RUN   TestGlobalManager_GetLocalManagerCount
+--- PASS: TestGlobalManager_GetLocalManagerCount (0.30s)
+=== RUN   TestGlobalManager_GetAllGoroutines
+--- PASS: TestGlobalManager_GetAllGoroutines (0.30s)
+=== RUN   TestGlobalManager_GetGoroutineCount
+--- PASS: TestGlobalManager_GetGoroutineCount (0.30s)
+=== RUN   TestGlobalManager_MultipleAppsAndLocals
+--- PASS: TestGlobalManager_MultipleAppsAndLocals (0.30s)
+=== RUN   TestGlobalManager_BeforeInit
+--- PASS: TestGlobalManager_BeforeInit (0.30s)
+=== RUN   TestGo_Basic
+
+=== TestGo_Basic ===
+Initialized app-level context for: LocalManager.test-local
+Γ£ô Basic Go() test passed
+--- PASS: TestGo_Basic (0.40s)
+=== RUN   TestGo_WithTimeout
+
+=== TestGo_WithTimeout ===
+Γ£ô WithTimeout test passed
+--- PASS: TestGo_WithTimeout (0.55s)
+=== RUN   TestGo_WithPanicRecovery
+
+=== TestGo_WithPanicRecovery ===
+Γ£ô WithPanicRecovery test passed
+--- PASS: TestGo_WithPanicRecovery (0.50s)
+=== RUN   TestGo_AddToWaitGroup
+
+=== TestGo_AddToWaitGroup ===
+Γ£ô AddToWaitGroup test passed
+--- PASS: TestGo_AddToWaitGroup (0.35s)
+=== RUN   TestGo_WithTimeoutAndPanicRecovery
+
+=== TestGo_WithTimeoutAndPanicRecovery ===
+Γ£ô WithTimeout + WithPanicRecovery test passed
+--- PASS: TestGo_WithTimeoutAndPanicRecovery (0.40s)
+=== RUN   TestGo_WithTimeoutAndWaitGroup
+
+=== TestGo_WithTimeoutAndWaitGroup ===
+Γ£ô WithTimeout + AddToWaitGroup test passed
+--- PASS: TestGo_WithTimeoutAndWaitGroup (0.35s)
+=== RUN   TestGo_WithPanicRecoveryAndWaitGroup
+
+=== TestGo_WithPanicRecoveryAndWaitGroup ===
+Γ£ô WithPanicRecovery + AddToWaitGroup test passed
+--- PASS: TestGo_WithPanicRecoveryAndWaitGroup (0.40s)
+=== RUN   TestGo_AllOptions
+
+=== TestGo_AllOptions ===
+Γ£ô All options test passed
+--- PASS: TestGo_AllOptions (0.35s)
+=== RUN   TestGo_InvalidOption
+
+=== TestGo_InvalidOption ===
+Γ£ô Invalid option test passed
+--- PASS: TestGo_InvalidOption (0.40s)
+=== RUN   TestGo_MultipleOptionsOrder
+
+=== TestGo_MultipleOptionsOrder ===
+Γ£ô Multiple options order test passed
+--- PASS: TestGo_MultipleOptionsOrder (0.35s)
+=== RUN   TestGo_ContextCancellation
+
+=== TestGo_ContextCancellation ===
+Γ£ô Context cancellation test passed
+--- PASS: TestGo_ContextCancellation (0.45s)
+=== RUN   TestGo_EmptyOptions
+
+=== TestGo_EmptyOptions ===
+Γ£ô Empty options test passed
+--- PASS: TestGo_EmptyOptions (0.40s)
+=== RUN   TestLocalManager_CreateLocal
+
+=== TestLocalManager_CreateLocal ===
+Creating app manager...
+Γ£ô App manager created
+Creating local manager...
+Γ£ô Local manager created: test-local
+--- PASS: TestLocalManager_CreateLocal (0.30s)
+=== RUN   TestLocalManager_CreateLocal_Idempotent
+--- PASS: TestLocalManager_CreateLocal_Idempotent (0.30s)
+=== RUN   TestLocalManager_Go_SpawnGoroutine
+
+=== TestLocalManager_Go_SpawnGoroutine ===
+Setting up app and local managers...
+Γ£ô Setup complete
+Spawning goroutine with Go()...
+Γ£ô Goroutine spawned
+Waiting for goroutine to execute...
+  ΓåÆ Goroutine executing...
+  ΓåÆ Goroutine completed
+Γ£ô Goroutine executed successfully
+Goroutine count: 0
+    LocalManager_test.go:119: Expected 1 tracked goroutine, got 0
+--- FAIL: TestLocalManager_Go_SpawnGoroutine (0.40s)
+=== RUN   TestLocalManager_Go_MultipleGoroutines
+
+=== TestLocalManager_Go_MultipleGoroutines ===
+Spawning 5 goroutines...
+  Spawned goroutine 1/5
+  Spawned goroutine 2/5
+  Spawned goroutine 3/5
+  Spawned goroutine 4/5
+  Spawned goroutine 5/5
+Γ£ô All goroutines spawned
+Total goroutines tracked: 5
+Γ£ô All goroutines tracked correctly
+--- PASS: TestLocalManager_Go_MultipleGoroutines (0.30s)
+=== RUN   TestLocalManager_GetAllGoroutines
+
+=== TestLocalManager_GetAllGoroutines ===
+Checking initial state (should be empty)...
+Γ£ô Initial state is empty
+Spawning 3 goroutines...
+Γ£ô Goroutines spawned
+Retrieving all goroutines...
+Found 3 goroutines
+Verifying goroutine metadata...
+  Goroutine 1:
+    ID: PEuKYlQafRgsAAAAAAAAAA
+    Function: testFunc
+    Started At: 1764595578731907900
+  Goroutine 2:
+    ID: PEuKYlQafRgtAAAAAAAAAA
+    Function: testFunc
+    Started At: 1764595578731907900
+  Goroutine 3:
+    ID: PEuKYlQafRgrAAAAAAAAAA
+    Function: testFunc
+    Started At: 1764595578731907900
+Γ£ô All metadata verified
+--- PASS: TestLocalManager_GetAllGoroutines (0.30s)
+=== RUN   TestLocalManager_GetGoroutineCount
+--- PASS: TestLocalManager_GetGoroutineCount (0.30s)
+=== RUN   TestLocalManager_ContextPropagation
+
+=== TestLocalManager_ContextPropagation ===
+Spawning goroutine to test context propagation...
+Waiting for goroutine to execute...
+  ΓåÆ Context received in goroutine: Γ£ô
+Γ£ô Context propagated successfully
+--- PASS: TestLocalManager_ContextPropagation (0.40s)
+=== RUN   TestLocalManager_GoroutineCompletion
+--- PASS: TestLocalManager_GoroutineCompletion (0.45s)
+=== RUN   TestLocalManager_MultipleLocalManagers
+
+=== TestLocalManager_MultipleLocalManagers ===
+Creating 2 local managers...
+Γ£ô Local1 created
+Γ£ô Local2 created
+Spawning goroutines in local1 (2) and local2 (1)...
+Γ£ô Goroutines spawned
+Verifying independent counts...
+  Local1 goroutine count: 1
+    LocalManager_test.go:381: Local1 should have 2 goroutines, got 1
+  Local2 goroutine count: 0
+    LocalManager_test.go:387: Local2 should have 1 goroutine, got 0
+Γ£ô Counts are independent and correct
+--- FAIL: TestLocalManager_MultipleLocalManagers (0.30s)
+=== RUN   TestLocalManager_ErrorHandling
+--- PASS: TestLocalManager_ErrorHandling (0.40s)
+=== RUN   TestLocalManager_ComplexOperationsWithArguments
+
+=== TestLocalManager_ComplexOperationsWithArguments ===
+Setting up app and local managers...
+Γ£ô Setup complete
+
+Spawning goroutines with different operations...
+Γ£ô All 15 goroutines spawned
+
+Total goroutines tracked: 15
+
+Waiting for all operations to complete...
+  ΓåÆ ADD Routine 4: 40 + 100 = 140 (took 20.9107ms)
+  ΓåÆ ADD Routine 1: 10 + 100 = 110 (took 20.9107ms)
+  ΓåÆ ADD Routine 3: 30 + 100 = 130 (took 20.9107ms)
+  ΓåÆ ADD Routine 2: 20 + 100 = 120 (took 20.9107ms)
+  ΓåÆ ADD Routine 5: 50 + 100 = 150 (took 20.9107ms)
+  ΓåÆ FACTORIAL Routine 14: 4! = 24 (took 25.5919ms)
+  ΓåÆ FACTORIAL Routine 11: 1! = 1 (took 25.5919ms)
+  ΓåÆ FACTORIAL Routine 15: 5! = 120 (took 25.5919ms)
+  ΓåÆ FACTORIAL Routine 12: 2! = 2 (took 25.5919ms)
+  ΓåÆ FACTORIAL Routine 13: 3! = 6 (took 25.5919ms)
+  ΓåÆ MULTIPLY Routine 8: 3 ├ù 7 = 21 (took 30.271ms)
+  ΓåÆ MULTIPLY Routine 7: 2 ├ù 7 = 14 (took 30.271ms)
+  ΓåÆ MULTIPLY Routine 9: 4 ├ù 7 = 28 (took 30.271ms)
+  ΓåÆ MULTIPLY Routine 6: 1 ├ù 7 = 7 (took 30.271ms)
+  ΓåÆ MULTIPLY Routine 10: 5 ├ù 7 = 35 (took 30.2706ms)
+
+=== Results Summary ===
+
+ADD Operations: 5
+  Routine  4: Input=40, Output=140, Time=20.9107ms
+  Routine  1: Input=10, Output=110, Time=20.9107ms
+  Routine  3: Input=30, Output=130, Time=20.9107ms
+  Routine  5: Input=50, Output=150, Time=20.9107ms
+  Routine  2: Input=20, Output=120, Time=20.9107ms
+
+MULTIPLY Operations: 5
+  Routine  8: Input=3, Output=21, Time=30.271ms
+  Routine  7: Input=2, Output=14, Time=30.271ms
+  Routine  9: Input=4, Output=28, Time=30.271ms
+  Routine  6: Input=1, Output=7, Time=30.271ms
+  Routine 10: Input=5, Output=35, Time=30.2706ms
+
+FACTORIAL Operations: 5
+  Routine 14: Input=4, Output=24, Time=25.5919ms
+  Routine 11: Input=1, Output=1, Time=25.5919ms
+  Routine 15: Input=5, Output=120, Time=25.5919ms
+  Routine 12: Input=2, Output=2, Time=25.5919ms
+  Routine 13: Input=3, Output=6, Time=25.5919ms
+
+=== Verification ===
+Γ£ô Factorial(5) = 120 is correct
+Γ£ô Multiply(5, 7) = 35 is correct
+
+Γ£ô All complex operations completed successfully!
+--- PASS: TestLocalManager_ComplexOperationsWithArguments (1.30s)
+=== RUN   TestMetadata_NewMetadata
+--- PASS: TestMetadata_NewMetadata (0.30s)
+=== RUN   TestMetadata_NewMetadata_Idempotent
+--- PASS: TestMetadata_NewMetadata_Idempotent (0.30s)
+=== RUN   TestMetadata_SetMaxRoutines
+--- PASS: TestMetadata_SetMaxRoutines (0.30s)
+=== RUN   TestMetadata_SetShutdownTimeout
+--- PASS: TestMetadata_SetShutdownTimeout (0.30s)
+=== RUN   TestMetadata_SetMetrics
+--- PASS: TestMetadata_SetMetrics (0.30s)
+=== RUN   TestMetadata_GetMetadata
+--- PASS: TestMetadata_GetMetadata (0.30s)
+=== RUN   TestMetadata_MethodChaining
+--- PASS: TestMetadata_MethodChaining (0.30s)
+=== RUN   TestGlobalManager_UpdateMetadata_SetMaxRoutines
+--- PASS: TestGlobalManager_UpdateMetadata_SetMaxRoutines (0.30s)
+=== RUN   TestGlobalManager_UpdateMetadata_SetShutdownTimeout
+--- PASS: TestGlobalManager_UpdateMetadata_SetShutdownTimeout (0.30s)
+=== RUN   TestGlobalManager_UpdateMetadata_SetMetricsURL
+--- PASS: TestGlobalManager_UpdateMetadata_SetMetricsURL (0.30s)
+=== RUN   TestGlobalManager_UpdateMetadata_InvalidFlag
+Initialized app-level context for: Test:ResetGlobalState
+2025/12/01 18:56:24 Starting metrics server on http://localhost:9090/metrics
+2025/12/01 18:56:24 Starting metrics server on http://array.com
+==================
+WARNING: DATA RACE
+Write at 0x000140c1c3d0 by goroutine 157:
+  github.com/neerajchowdary889/GoRoutinesManager/Tests/Common.ResetGlobalState()
+      D:/CodeSection/GoRoutinesManager/Tests/Common/resetglobalstate.go:33 +0xc5
+  github.com/neerajchowdary889/GoRoutinesManager/Tests/Managertests.TestGlobalManager_UpdateMetadata_InvalidFlag()
+      D:/CodeSection/GoRoutinesManager/Tests/Managertests/Metadata_test.go:365 +0x29
+  testing.tRunner()
+      C:/Users/rknai/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.windows-amd64/src/testing/testing.go:1792 +0x1dc
+  testing.(*T).Run.gowrap1()
+      C:/Users/rknai/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.windows-amd64/src/testing/testing.go:1851 +0x44
+
+Previous read at 0x000140c1c3d0 by goroutine 152:
+  github.com/neerajchowdary889/GoRoutinesManager/types.GetGlobalManager()
+      D:/CodeSection/GoRoutinesManager/types/Singleton.go:45 +0x98
+  github.com/neerajchowdary889/GoRoutinesManager/metrics.(*Collector).collectMetadataMetrics()
+      D:/CodeSection/GoRoutinesManager/metrics/collector.go:292 +0x31
+  github.com/neerajchowdary889/GoRoutinesManager/metrics.(*Collector).Collect()
+      D:/CodeSection/GoRoutinesManager/metrics/collector.go:117 +0x5a
+  github.com/neerajchowdary889/GoRoutinesManager/metrics.(*Collector).collectLoop()
+      D:/CodeSection/GoRoutinesManager/metrics/collector.go:80 +0x11c
+  github.com/neerajchowdary889/GoRoutinesManager/metrics.(*Collector).Start.gowrap1()
+      D:/CodeSection/GoRoutinesManager/metrics/collector.go:42 +0x33
+
+Goroutine 157 (running) created at:
+  testing.(*T).Run()
+      C:/Users/rknai/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.windows-amd64/src/testing/testing.go:1851 +0x8f8
+  testing.runTests.func1()
+      C:/Users/rknai/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.windows-amd64/src/testing/testing.go:2279 +0x85
+  testing.tRunner()
+      C:/Users/rknai/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.windows-amd64/src/testing/testing.go:1792 +0x1dc
+  testing.runTests()
+      C:/Users/rknai/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.windows-amd64/src/testing/testing.go:2277 +0x96c
+  testing.(*M).Run()
+      C:/Users/rknai/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.windows-amd64/src/testing/testing.go:2142 +0xeea
+  main.main()
+      _testmain.go:161 +0x164
+
+Goroutine 152 (finished) created at:
+  github.com/neerajchowdary889/GoRoutinesManager/metrics.(*Collector).Start()
+      D:/CodeSection/GoRoutinesManager/metrics/collector.go:42 +0xc4
+  github.com/neerajchowdary889/GoRoutinesManager/metrics.StartMetricsServer()
+      D:/CodeSection/GoRoutinesManager/metrics/exporter.go:46 +0x265
+  github.com/neerajchowdary889/GoRoutinesManager/Manager/Global.(*GlobalManager).UpdateGlobalMetadata()
+      D:/CodeSection/GoRoutinesManager/Manager/Global/Metadata.go:134 +0xbeb
+  github.com/neerajchowdary889/GoRoutinesManager/Manager/Global.(*GlobalManager).UpdateMetadata()
+      D:/CodeSection/GoRoutinesManager/Manager/Global/GlobalManager.go:206 +0x5f7
+  github.com/neerajchowdary889/GoRoutinesManager/Tests/Managertests.TestGlobalManager_UpdateMetadata_SetMetricsURL()
+      D:/CodeSection/GoRoutinesManager/Tests/Managertests/Metadata_test.go:349 +0x545
+  testing.tRunner()
+      C:/Users/rknai/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.windows-amd64/src/testing/testing.go:1792 +0x1dc
+  testing.(*T).Run.gowrap1()
+      C:/Users/rknai/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.windows-amd64/src/testing/testing.go:1851 +0x44
+==================
+    testing.go:1490: race detected during execution of test
+--- FAIL: TestGlobalManager_UpdateMetadata_InvalidFlag (0.30s)
+=== RUN   TestGlobalManager_UpdateMetadata_InvalidTypes
+--- PASS: TestGlobalManager_UpdateMetadata_InvalidTypes (0.30s)
+=== RUN   TestGlobalManager_GetMetadata
+--- PASS: TestGlobalManager_GetMetadata (0.30s)
+=== RUN   TestGlobalManager_GetMetadata_BeforeInit
+--- PASS: TestGlobalManager_GetMetadata_BeforeInit (0.30s)
+=== RUN   TestGlobalManager_UpdateMetadata_BeforeInit
+--- PASS: TestGlobalManager_UpdateMetadata_BeforeInit (0.30s)
+=== RUN   TestMetadata_ComplexScenario
+--- PASS: TestMetadata_ComplexScenario (0.30s)
+=== RUN   TestGlobalManager_MetricsServer_Integration
+2025/12/01 18:56:26 Starting metrics server on http://prometheus:9090/metrics
+2025/12/01 18:56:26 Metrics server error: listen tcp: address http://prometheus:9090/metrics: too many colons in address
+==================
+WARNING: DATA RACE
+Write at 0x000140c1c3d0 by goroutine 168:
+  github.com/neerajchowdary889/GoRoutinesManager/Tests/Common.ResetGlobalState()
+      D:/CodeSection/GoRoutinesManager/Tests/Common/resetglobalstate.go:33 +0xc5
+  github.com/neerajchowdary889/GoRoutinesManager/Tests/Managertests.TestGlobalManager_MetricsServer_Integration()
+      D:/CodeSection/GoRoutinesManager/Tests/Managertests/Metadata_test.go:519 +0x33
+  testing.tRunner()
+      C:/Users/rknai/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.windows-amd64/src/testing/testing.go:1792 +0x1dc
+  testing.(*T).Run.gowrap1()
+      C:/Users/rknai/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.windows-amd64/src/testing/testing.go:1851 +0x44
+
+Previous read at 0x000140c1c3d0 by goroutine 163:
+  github.com/neerajchowdary889/GoRoutinesManager/types.GetGlobalManager()
+      D:/CodeSection/GoRoutinesManager/types/Singleton.go:45 +0x98
+  github.com/neerajchowdary889/GoRoutinesManager/metrics.(*Collector).collectMetadataMetrics()
+      D:/CodeSection/GoRoutinesManager/metrics/collector.go:292 +0x31
+  github.com/neerajchowdary889/GoRoutinesManager/metrics.(*Collector).Collect()
+      D:/CodeSection/GoRoutinesManager/metrics/collector.go:117 +0x5a
+  github.com/neerajchowdary889/GoRoutinesManager/metrics.(*Collector).collectLoop()
+      D:/CodeSection/GoRoutinesManager/metrics/collector.go:80 +0x11c
+  github.com/neerajchowdary889/GoRoutinesManager/metrics.(*Collector).Start.gowrap1()
+      D:/CodeSection/GoRoutinesManager/metrics/collector.go:42 +0x33
+
+Goroutine 168 (running) created at:
+  testing.(*T).Run()
+      C:/Users/rknai/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.windows-amd64/src/testing/testing.go:1851 +0x8f8
+  testing.runTests.func1()
+      C:/Users/rknai/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.windows-amd64/src/testing/testing.go:2279 +0x85
+  testing.tRunner()
+      C:/Users/rknai/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.windows-amd64/src/testing/testing.go:1792 +0x1dc
+  testing.runTests()
+      C:/Users/rknai/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.windows-amd64/src/testing/testing.go:2277 +0x96c
+  testing.(*M).Run()
+      C:/Users/rknai/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.windows-amd64/src/testing/testing.go:2142 +0xeea
+  main.main()
+      _testmain.go:161 +0x164
+
+Goroutine 163 (finished) created at:
+  github.com/neerajchowdary889/GoRoutinesManager/metrics.(*Collector).Start()
+      D:/CodeSection/GoRoutinesManager/metrics/collector.go:42 +0xc4
+  github.com/neerajchowdary889/GoRoutinesManager/metrics.StartMetricsServer()
+      D:/CodeSection/GoRoutinesManager/metrics/exporter.go:46 +0x265
+  github.com/neerajchowdary889/GoRoutinesManager/Manager/Global.(*GlobalManager).UpdateGlobalMetadata()
+      D:/CodeSection/GoRoutinesManager/Manager/Global/Metadata.go:134 +0xbeb
+  github.com/neerajchowdary889/GoRoutinesManager/Manager/Global.(*GlobalManager).UpdateMetadata()
+      D:/CodeSection/GoRoutinesManager/Manager/Global/GlobalManager.go:206 +0x1a9
+  github.com/neerajchowdary889/GoRoutinesManager/Tests/Managertests.TestMetadata_ComplexScenario()
+      D:/CodeSection/GoRoutinesManager/Tests/Managertests/Metadata_test.go:484 +0x185
+  testing.tRunner()
+      C:/Users/rknai/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.windows-amd64/src/testing/testing.go:1792 +0x1dc
+  testing.(*T).Run.gowrap1()
+      C:/Users/rknai/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.10.windows-amd64/src/testing/testing.go:1851 +0x44
+==================
+2025/12/01 18:56:27 Starting metrics server on :19091
+    testing.go:1490: race detected during execution of test
+--- FAIL: TestGlobalManager_MetricsServer_Integration (0.50s)
+FAIL
+FAIL	github.com/neerajchowdary889/GoRoutinesManager/Tests/Managertests	22.785s
+FAIL

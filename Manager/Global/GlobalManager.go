@@ -1,10 +1,13 @@
 package Global
 
 import (
+	"time"
+
 	AppHelper "github.com/neerajchowdary889/GoRoutinesManager/Helper/App"
 	LocalHelper "github.com/neerajchowdary889/GoRoutinesManager/Helper/Local"
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/App"
 	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Interface"
+	"github.com/neerajchowdary889/GoRoutinesManager/metrics"
 	"github.com/neerajchowdary889/GoRoutinesManager/types"
 )
 
@@ -15,6 +18,12 @@ func NewGlobalManager() Interface.GlobalGoroutineManagerInterface {
 }
 
 func (GM *GlobalManager) Init() error {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		metrics.RecordManagerOperationDuration("global", "init", duration, "")
+	}()
+
 	if types.IsIntilized().Global() {
 		return nil
 	}
@@ -22,20 +31,39 @@ func (GM *GlobalManager) Init() error {
 	Global := types.NewGlobalManager().SetGlobalMutex().SetGlobalWaitGroup().SetGlobalContext()
 	types.SetGlobalManager(Global)
 
+	// Record operation
+	metrics.RecordManagerOperation("global", "init", "")
+
 	return nil
 }
 
 func (GM *GlobalManager) Shutdown(safe bool) error {
+	startTime := time.Now()
+	shutdownType := "unsafe"
+	if safe {
+		shutdownType = "safe"
+	}
+
+	defer func() {
+		duration := time.Since(startTime)
+		metrics.RecordShutdownDuration("global", shutdownType, duration, "", "")
+	}()
+
 	globalMgr, err := types.GetGlobalManager()
 	if err != nil {
+		metrics.RecordOperationError("manager", "shutdown", "get_global_manager_failed")
 		return err
 	}
 
 	// Get all app managers
 	appManagers, err := GM.GetAllAppManagers()
 	if err != nil {
+		metrics.RecordOperationError("manager", "shutdown", "get_app_managers_failed")
 		return err
 	}
+
+	// Record shutdown operation
+	metrics.RecordManagerOperation("global", "shutdown", "")
 
 	if safe {
 		// Safe shutdown: trigger shutdown on all app managers and wait
@@ -54,8 +82,12 @@ func (GM *GlobalManager) Shutdown(safe bool) error {
 					_ = amInstance.Shutdown(true)
 
 					// Wait for app manager's wait group (redundant but safe)
-					if am.Wg != nil {
-						am.Wg.Wait()
+					// Lock to safely read Wg pointer to avoid race condition
+					am.LockAppReadMutex()
+					wg := am.Wg
+					am.UnlockAppReadMutex()
+					if wg != nil {
+						wg.Wait()
 					}
 				}(appMgr)
 			}
@@ -82,9 +114,9 @@ func (GM *GlobalManager) Shutdown(safe bool) error {
 }
 
 func (GM *GlobalManager) GetAllAppManagers() ([]*types.AppManager, error) {
-	Global, error := types.GetGlobalManager()
-	if error != nil {
-		return nil, error
+	Global, err := types.GetGlobalManager()
+	if err != nil {
+		return nil, err
 	}
 
 	mapValue := Global.GetAppManagers()
@@ -93,8 +125,8 @@ func (GM *GlobalManager) GetAllAppManagers() ([]*types.AppManager, error) {
 }
 
 func (GM *GlobalManager) GetAppManagerCount() int {
-	Global, error := types.GetGlobalManager()
-	if error != nil {
+	Global, err := types.GetGlobalManager()
+	if err != nil {
 		return 0
 	}
 	return Global.GetAppManagerCount()
@@ -102,9 +134,9 @@ func (GM *GlobalManager) GetAppManagerCount() int {
 
 func (GM *GlobalManager) GetAllLocalManagers() ([]*types.LocalManager, error) {
 	// Get all app managers first
-	appManagers, error := GM.GetAllAppManagers()
-	if error != nil {
-		return nil, error
+	appManagers, err := GM.GetAllAppManagers()
+	if err != nil {
+		return nil, err
 	}
 
 	// Get all local managers from each app manager
@@ -122,8 +154,8 @@ func (GM *GlobalManager) GetLocalManagerCount() int {
 	// get all the local managers first
 	// Dont use GetAllLocalManagers() as it will create a new slice - memory usage would be O(n)
 	// and it will be a performance issue
-	App, error := GM.GetAllAppManagers()
-	if error != nil {
+	App, err := GM.GetAllAppManagers()
+	if err != nil {
 		return 0
 	}
 	i := 0
@@ -135,9 +167,9 @@ func (GM *GlobalManager) GetLocalManagerCount() int {
 
 func (GM *GlobalManager) GetAllGoroutines() ([]*types.Routine, error) {
 	// Get all app managers first
-	appManagers, error := GM.GetAllAppManagers()
-	if error != nil {
-		return nil, error
+	appManagers, err := GM.GetAllAppManagers()
+	if err != nil {
+		return nil, err
 	}
 
 	// Get all goroutines from each app manager - would run on O(n*m)
@@ -156,8 +188,8 @@ func (GM *GlobalManager) GetGoroutineCount() int {
 	// get all the goroutines first
 	// Dont use GetAllGoroutines() as it will create a new slice - memory usage would be O(n)
 	// and it will be a performance issue
-	App, error := GM.GetAllAppManagers()
-	if error != nil {
+	App, err := GM.GetAllAppManagers()
+	if err != nil {
 		return 0
 	}
 	i := 0
@@ -169,7 +201,6 @@ func (GM *GlobalManager) GetGoroutineCount() int {
 	}
 	return i
 }
-
 
 func (GM *GlobalManager) UpdateMetadata(flag string, value interface{}) (*types.Metadata, error) {
 	return GM.UpdateGlobalMetadata(flag, value)

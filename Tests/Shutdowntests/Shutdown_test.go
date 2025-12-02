@@ -34,11 +34,11 @@ func TestLocalManager_SafeShutdown(t *testing.T) {
 	fmt.Println("Spawning 5 goroutines with wait group...")
 	var counter atomic.Int32
 	for i := 0; i < 5; i++ {
-		localMgr.GoWithWaitGroup("worker", func(ctx context.Context) error {
+		localMgr.Go("worker", func(ctx context.Context) error {
 			counter.Add(1)
 			time.Sleep(100 * time.Millisecond)
 			return nil
-		})
+		}, Local.AddToWaitGroup("worker"))
 	}
 	fmt.Println("✓ Goroutines spawned")
 
@@ -152,10 +152,10 @@ func TestAppManager_SafeShutdown(t *testing.T) {
 
 		// Spawn goroutines in each local manager
 		for j := 0; j < 2; j++ {
-			localMgr.GoWithWaitGroup("worker", func(ctx context.Context) error {
+			localMgr.Go("worker", func(ctx context.Context) error {
 				time.Sleep(100 * time.Millisecond)
 				return nil
-			})
+			}, Local.AddToWaitGroup("worker"))
 		}
 	}
 	fmt.Println("✓ 3 local managers created with 2 goroutines each")
@@ -203,10 +203,10 @@ func TestGlobalManager_SafeShutdown(t *testing.T) {
 			}
 
 			// Spawn goroutines
-			localMgr.GoWithWaitGroup("worker", func(ctx context.Context) error {
+			localMgr.Go("worker", func(ctx context.Context) error {
 				time.Sleep(100 * time.Millisecond)
 				return nil
-			})
+			}, Local.AddToWaitGroup("worker"))
 		}
 	}
 	fmt.Println("✓ 2 apps created with 2 local managers each")

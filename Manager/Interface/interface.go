@@ -8,6 +8,11 @@ import (
 	"github.com/neerajchowdary889/GoRoutinesManager/types"
 )
 
+// GoroutineOption is a function that configures goroutine options.
+// Implementations should define their own option types that satisfy this interface.
+// The Local package provides WithTimeout and WithPanicRecovery functions.
+type GoroutineOption interface{}
+
 // Initializer initializes the manager
 type Initializer interface {
 	Init() error
@@ -27,8 +32,10 @@ type MetadataManager interface {
 
 // GoroutineSpawner spawns and tracks goroutines
 type GoroutineSpawner interface {
-	Go(functionName string, workerFunc func(ctx context.Context) error) error
-	GoWithWaitGroup(functionName string, workerFunc func(ctx context.Context) error) error
+	// Go spawns a goroutine with optional configuration.
+	// Options can be provided for timeout, panic recovery, and wait group management.
+	// The Local package provides WithTimeout, WithPanicRecovery, and AddToWaitGroup option functions.
+	Go(functionName string, workerFunc func(ctx context.Context) error, opts ...GoroutineOption) error
 }
 
 // FunctionShutdowner handles shutdown of specific functions
@@ -46,6 +53,11 @@ type GoroutineLister interface {
 type LocalManagerLister interface {
 	GetAllLocalManagers() ([]*types.LocalManager, error)
 	GetLocalManagerCount() int
+}
+
+// LocalManagerGetter gets a local manager by name
+type LocalManagerGetter interface {
+	GetLocalManagerByName(localName string) (*types.LocalManager, error)
 }
 
 // AppManagerLister lists all app managers
@@ -85,6 +97,7 @@ type RoutineManager interface {
 	GetRoutineUptime(routineID string) time.Duration
 	IsRoutineContextCancelled(routineID string) bool
 	GetRoutine(routineID string) (*types.Routine, error)
+	GetRoutinesByFunctionName(functionName string) ([]*types.Routine, error)
 }
 
 // ----------------------
@@ -114,6 +127,8 @@ type AppGoroutineManagerInterface interface {
 	LocalManagerLister
 
 	GoroutineLister
+
+	LocalManagerGetter
 }
 
 // LocalGoroutineManagerInterface defines the complete interface for local manager
@@ -125,8 +140,9 @@ type LocalGoroutineManagerInterface interface {
 
 	GoroutineSpawner
 
-	GoroutineLister
+	RoutineManager
 
+	GoroutineLister
 	FunctionWaitGroupCreator
 	FunctionWaitGroupManager
 }

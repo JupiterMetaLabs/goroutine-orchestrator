@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/neerajchowdary889/GoRoutinesManager/Context"
-	"github.com/neerajchowdary889/GoRoutinesManager/types/Errors"
+	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Errors"
 )
 
 const (
@@ -38,34 +38,34 @@ func NewAppManager(appName string) *AppManager {
 // Lock APIs
 // LockAppReadMutex locks the app read mutex for the app manager - This is used to read the app manager's data
 func (AM *AppManager) LockAppReadMutex() {
-	if AM.AppMu == nil {
+	if AM.appMu == nil {
 		AM.SetAppMutex()
 	}
-	AM.AppMu.RLock()
+	AM.appMu.RLock()
 }
 
 // UnlockAppReadMutex unlocks the app read mutex for the app manager - This is used to read the app manager's data
 func (AM *AppManager) UnlockAppReadMutex() {
-	if AM.AppMu == nil {
+	if AM.appMu == nil {
 		AM.SetAppMutex()
 	}
-	AM.AppMu.RUnlock()
+	AM.appMu.RUnlock()
 }
 
 // LockAppWriteMutex locks the app write mutex for the app manager - This is used to write the app manager's data
 func (AM *AppManager) LockAppWriteMutex() {
-	if AM.AppMu == nil {
+	if AM.appMu == nil {
 		AM.SetAppMutex()
 	}
-	AM.AppMu.Lock()
+	AM.appMu.Lock()
 }
 
 // UnlockAppWriteMutex unlocks the app write mutex for the app manager - This is used to write the app manager's data
 func (AM *AppManager) UnlockAppWriteMutex() {
-	if AM.AppMu == nil {
+	if AM.appMu == nil {
 		AM.SetAppMutex()
 	}
-	AM.AppMu.Unlock()
+	AM.appMu.Unlock()
 }
 
 // >>> Set APIs
@@ -77,8 +77,8 @@ func (AM *AppManager) SetAppName(appName string) *AppManager {
 
 // SetAppMutex sets the mutex for the app manager
 func (AM *AppManager) SetAppMutex() *AppManager {
-	if AM.AppMu == nil {
-		AM.AppMu = &sync.RWMutex{}
+	if AM.appMu == nil {
+		AM.appMu = &sync.RWMutex{}
 	}
 	return AM
 }

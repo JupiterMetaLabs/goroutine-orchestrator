@@ -174,10 +174,8 @@ func TestAppManager_GetGoroutineCount(t *testing.T) {
 	local, _ := localMgr.CreateLocal("local1")
 	app.AddLocalManager("local1", local)
 
-	routine1 := types.NewGoRoutine("func1")
-	routine2 := types.NewGoRoutine("func2")
-	local.AddRoutine(routine1)
-	local.AddRoutine(routine2)
+	local.NewGoRoutine("func1")
+	local.NewGoRoutine("func2")
 
 	count = appMgr.GetGoroutineCount()
 	if count != 2 {
@@ -205,11 +203,11 @@ func TestAppManager_GetAllGoroutines(t *testing.T) {
 	app.AddLocalManager("local2", local2)
 
 	// Add routines to local1
-	local1.AddRoutine(types.NewGoRoutine("func1"))
-	local1.AddRoutine(types.NewGoRoutine("func2"))
+	local1.NewGoRoutine("func1")
+	local1.NewGoRoutine("func2")
 
 	// Add routines to local2
-	local2.AddRoutine(types.NewGoRoutine("func3"))
+	local2.NewGoRoutine("func3")
 
 	// Get all goroutines
 	routines, err := appMgr.GetAllGoroutines()
