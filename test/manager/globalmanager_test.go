@@ -21,7 +21,7 @@ func TestGlobalManager_Init(t *testing.T) {
 	gm := global.NewGlobalManager()
 
 	// Test first initialization
-	err := gm.Init()
+	_, err := gm.Init()
 	if err != nil {
 		t.Fatalf("Init() failed: %v", err)
 	}
@@ -32,7 +32,7 @@ func TestGlobalManager_Init(t *testing.T) {
 	}
 
 	// Test idempotent initialization (should not error)
-	err = gm.Init()
+	_, err = gm.Init()
 	if err != nil {
 		t.Errorf("Second Init() should not error: %v", err)
 	}

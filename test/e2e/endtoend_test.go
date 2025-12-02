@@ -42,14 +42,15 @@ func TestComplexSystemWithMetrics(t *testing.T) {
 
 	// Initialize Global Manager
 	globalMgr := global.NewGlobalManager()
-	if err := globalMgr.Init(); err != nil {
+	_, err := globalMgr.Init()
+	if err != nil {
 		t.Fatalf("Failed to initialize Global Manager: %v", err)
 	}
 	fmt.Println("✓ Global Manager initialized")
 
 	// Enable metrics with 2 second update interval
 	metricsPort := ":19090"
-	_, err := globalMgr.UpdateMetadata(global.SET_METRICS_URL, []interface{}{true, "", 2 * time.Second})
+	_, err = globalMgr.UpdateMetadata(global.SET_METRICS_URL, []interface{}{true, "", 2 * time.Second})
 	if err != nil {
 		t.Fatalf("Failed to enable metrics: %v", err)
 	}
