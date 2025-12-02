@@ -1,11 +1,11 @@
-package manager
+package manager_test
 
 import (
 	"testing"
 	"time"
 
 	"github.com/JupiterMetaLabs/goroutine-orchestrator/manager/global"
-	"github.com/JupiterMetaLabs/goroutine-orchestrator/test/common"
+	common "github.com/JupiterMetaLabs/goroutine-orchestrator/test/common"
 	"github.com/JupiterMetaLabs/goroutine-orchestrator/metrics"
 	"github.com/JupiterMetaLabs/goroutine-orchestrator/types"
 )

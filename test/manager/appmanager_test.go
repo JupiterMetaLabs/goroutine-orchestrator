@@ -1,4 +1,4 @@
-package manager
+package manager_test
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 	"github.com/JupiterMetaLabs/goroutine-orchestrator/manager/app"
 	"github.com/JupiterMetaLabs/goroutine-orchestrator/manager/global"
 	"github.com/JupiterMetaLabs/goroutine-orchestrator/manager/local"
-	"github.com/JupiterMetaLabs/goroutine-orchestrator/test/common"
+	common "github.com/JupiterMetaLabs/goroutine-orchestrator/test/common"
 	"github.com/JupiterMetaLabs/goroutine-orchestrator/types"
 )
 
