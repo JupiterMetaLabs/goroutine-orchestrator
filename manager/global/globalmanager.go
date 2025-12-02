@@ -11,13 +11,13 @@ import (
 	"github.com/JupiterMetaLabs/goroutine-orchestrator/types"
 )
 
-type GlobalManager struct{}
+type GlobalManagerStruct struct{}
 
 func NewGlobalManager() interfaces.GlobalGoroutineManagerInterface {
-	return &GlobalManager{}
+	return &GlobalManagerStruct{}
 }
 
-func (GM *GlobalManager) Init() error {
+func (GM *GlobalManagerStruct) Init() (*types.GlobalManager, error) {
 	startTime := time.Now()
 	defer func() {
 		duration := time.Since(startTime)
@@ -25,7 +25,7 @@ func (GM *GlobalManager) Init() error {
 	}()
 
 	if types.IsIntilized().Global() {
-		return nil
+		return types.GetGlobalManager()
 	}
 
 	Global := types.NewGlobalManager().SetGlobalMutex().SetGlobalWaitGroup().SetGlobalContext()
@@ -34,10 +34,10 @@ func (GM *GlobalManager) Init() error {
 	// Record operation
 	metrics.RecordManagerOperation("global", "init", "")
 
-	return nil
+	return types.GetGlobalManager()
 }
 
-func (GM *GlobalManager) Shutdown(safe bool) error {
+func (GM *GlobalManagerStruct) Shutdown(safe bool) error {
 	startTime := time.Now()
 	shutdownType := "unsafe"
 	if safe {
@@ -113,7 +113,7 @@ func (GM *GlobalManager) Shutdown(safe bool) error {
 	return nil
 }
 
-func (GM *GlobalManager) GetAllAppManagers() ([]*types.AppManager, error) {
+func (GM *GlobalManagerStruct) GetAllAppManagers() ([]*types.AppManager, error) {
 	Global, err := types.GetGlobalManager()
 	if err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func (GM *GlobalManager) GetAllAppManagers() ([]*types.AppManager, error) {
 	return helper.MapToSlice(mapValue), nil
 }
 
-func (GM *GlobalManager) GetAppManagerCount() int {
+func (GM *GlobalManagerStruct) GetAppManagerCount() int {
 	Global, err := types.GetGlobalManager()
 	if err != nil {
 		return 0
@@ -132,7 +132,7 @@ func (GM *GlobalManager) GetAppManagerCount() int {
 	return Global.GetAppManagerCount()
 }
 
-func (GM *GlobalManager) GetAllLocalManagers() ([]*types.LocalManager, error) {
+func (GM *GlobalManagerStruct) GetAllLocalManagers() ([]*types.LocalManager, error) {
 	// Get all app managers first
 	appManagers, err := GM.GetAllAppManagers()
 	if err != nil {
@@ -150,7 +150,7 @@ func (GM *GlobalManager) GetAllLocalManagers() ([]*types.LocalManager, error) {
 	return localManagers, nil
 }
 
-func (GM *GlobalManager) GetLocalManagerCount() int {
+func (GM *GlobalManagerStruct) GetLocalManagerCount() int {
 	// get all the local managers first
 	// Dont use GetAllLocalManagers() as it will create a new slice - memory usage would be O(n)
 	// and it will be a performance issue
@@ -165,7 +165,7 @@ func (GM *GlobalManager) GetLocalManagerCount() int {
 	return i
 }
 
-func (GM *GlobalManager) GetAllGoroutines() ([]*types.Routine, error) {
+func (GM *GlobalManagerStruct) GetAllGoroutines() ([]*types.Routine, error) {
 	// Get all app managers first
 	appManagers, err := GM.GetAllAppManagers()
 	if err != nil {
@@ -184,7 +184,7 @@ func (GM *GlobalManager) GetAllGoroutines() ([]*types.Routine, error) {
 	return goroutines, nil
 }
 
-func (GM *GlobalManager) GetGoroutineCount() int {
+func (GM *GlobalManagerStruct) GetGoroutineCount() int {
 	// get all the goroutines first
 	// Dont use GetAllGoroutines() as it will create a new slice - memory usage would be O(n)
 	// and it will be a performance issue
@@ -202,10 +202,10 @@ func (GM *GlobalManager) GetGoroutineCount() int {
 	return i
 }
 
-func (GM *GlobalManager) UpdateMetadata(flag string, value interface{}) (*types.Metadata, error) {
+func (GM *GlobalManagerStruct) UpdateMetadata(flag string, value interface{}) (*types.Metadata, error) {
 	return GM.UpdateGlobalMetadata(flag, value)
 }
 
-func (GM *GlobalManager) GetMetadata() (*types.Metadata, error) {
+func (GM *GlobalManagerStruct) GetMetadata() (*types.Metadata, error) {
 	return GM.GetGlobalMetadata()
 }

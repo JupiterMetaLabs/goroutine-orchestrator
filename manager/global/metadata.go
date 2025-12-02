@@ -22,7 +22,7 @@ type metricsConfig struct {
 	Interval time.Duration
 }
 
-func (GM *GlobalManager) UpdateGlobalMetadata(flag string, value interface{}) (*types.Metadata, error) {
+func (GM *GlobalManagerStruct) UpdateGlobalMetadata(flag string, value interface{}) (*types.Metadata, error) {
 	// Get the global manager first
 	g, err := types.GetGlobalManager()
 	if err != nil {
@@ -203,7 +203,7 @@ func (GM *GlobalManager) UpdateGlobalMetadata(flag string, value interface{}) (*
 	return metadata, nil
 }
 
-func (GM *GlobalManager) GetGlobalMetadata() (*types.Metadata, error) {
+func (GM *GlobalManagerStruct) GetGlobalMetadata() (*types.Metadata, error) {
 	g, err := types.GetGlobalManager()
 	if err != nil {
 		return nil, err
