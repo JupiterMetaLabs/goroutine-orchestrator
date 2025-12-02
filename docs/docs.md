@@ -40,9 +40,10 @@ The typical workflow is:
 
 ```go
 import (
-    "github.com/neerajchowdary889/GoRoutinesManager/Manager/Global"
-    "github.com/neerajchowdary889/GoRoutinesManager/Manager/App"
-    "github.com/neerajchowdary889/GoRoutinesManager/Manager/Local"
+    "github.com/JupiterMetaLabs/goroutine-orchestrator/manager/global"
+    "github.com/JupiterMetaLabs/goroutine-orchestrator/manager/app"
+    "github.com/JupiterMetaLabs/goroutine-orchestrator/manager/local"
+    "github.com/JupiterMetaLabs/goroutine-orchestrator/metrics"
 )
 ```
 
@@ -63,14 +64,15 @@ The GlobalManager is a singleton that orchestrates the entire application lifecy
 
 ### Initialization
 
-**Function:** `Init() error`
+**Function:** `Init() (*types.GlobalManager, error)`
 
 Initializes the global manager and sets up signal handling for SIGINT and SIGTERM. This should be called early in your application startup.
 
 **Example:**
 ```go
-globalMgr := Global.NewGlobalManager()
-if err := globalMgr.Init(); err != nil {
+globalMgr := global.NewGlobalManager()
+_, err := globalMgr.Init()
+if err != nil {
     log.Fatalf("Failed to initialize global manager: %v", err)
 }
 ```
@@ -173,7 +175,7 @@ Creates and registers an app manager. If the global manager is not initialized, 
 
 **Example:**
 ```go
-appMgr := App.NewAppManager("api-server")
+appMgr := app.NewAppManager("api-server")
 app, err := appMgr.CreateApp()
 if err != nil {
     log.Fatalf("Failed to create app: %v", err)
@@ -194,7 +196,7 @@ Creates a local manager within the app. This is typically done through the Local
 
 **Example:**
 ```go
-localMgr := Local.NewLocalManager("api-server", "handlers")
+localMgr := local.NewLocalManager("api-server", "handlers")
 local, err := localMgr.CreateLocal("handlers")
 if err != nil {
     log.Fatalf("Failed to create local manager: %v", err)
@@ -255,11 +257,11 @@ Creates a local manager. The app manager must exist first.
 **Example:**
 ```go
 // First create the app
-appMgr := App.NewAppManager("api-server")
+appMgr := app.NewAppManager("api-server")
 appMgr.CreateApp()
 
 // Then create the local manager
-localMgr := Local.NewLocalManager("api-server", "handlers")
+localMgr := local.NewLocalManager("api-server", "handlers")
 local, err := localMgr.CreateLocal("handlers")
 if err != nil {
     log.Fatalf("Failed to create local manager: %v", err)
@@ -311,7 +313,7 @@ localMgr.Go("timeout-worker", func(ctx context.Context) error {
             // Do work
         }
     }
-}, Local.WithTimeout(5 * time.Second))
+}, local.WithTimeout(5 * time.Second))
 ```
 
 #### WithPanicRecovery
@@ -327,7 +329,7 @@ localMgr.Go("safe-worker", func(ctx context.Context) error {
 // Disable panic recovery (not recommended)
 localMgr.Go("unsafe-worker", func(ctx context.Context) error {
     // Panics will crash the goroutine
-}, Local.WithPanicRecovery(false))
+}, local.WithPanicRecovery(false))
 ```
 
 #### AddToWaitGroup
@@ -340,7 +342,7 @@ for i := 0; i < 10; i++ {
     localMgr.Go("worker", func(ctx context.Context) error {
         // Do work
         return nil
-    }, Local.AddToWaitGroup("worker"))
+    }, local.AddToWaitGroup("worker"))
 }
 
 // Wait for all "worker" goroutines to complete
@@ -361,7 +363,7 @@ Function wait groups allow you to coordinate multiple goroutines with the same f
 ```go
 // Spawn multiple workers
 for i := 0; i < 5; i++ {
-    localMgr.Go("worker", workerFunc, Local.AddToWaitGroup("worker"))
+    localMgr.Go("worker", workerFunc, local.AddToWaitGroup("worker"))
 }
 
 // Wait for all workers with timeout
@@ -451,15 +453,15 @@ if err := localMgr.Shutdown(true); err != nil {
 
 ```go
 // Initialize global manager
-globalMgr := Global.NewGlobalManager()
+globalMgr := global.NewGlobalManager()
 globalMgr.Init()
 
 // Create app
-appMgr := App.NewAppManager("my-app")
+appMgr := app.NewAppManager("my-app")
 appMgr.CreateApp()
 
 // Create local manager
-localMgr := Local.NewLocalManager("my-app", "workers")
+localMgr := local.NewLocalManager("my-app", "workers")
 localMgr.CreateLocal("workers")
 
 // Spawn goroutines
@@ -481,28 +483,28 @@ select {}
 ### Pattern 2: Multiple Apps
 
 ```go
-globalMgr := Global.NewGlobalManager()
+globalMgr := global.NewGlobalManager()
 globalMgr.Init()
 
 // Create multiple apps
-apiApp := App.NewAppManager("api-server")
+apiApp := app.NewAppManager("api-server")
 apiApp.CreateApp()
 
-workerApp := App.NewAppManager("worker-pool")
+workerApp := app.NewAppManager("worker-pool")
 workerApp.CreateApp()
 
 // Setup each app independently
-apiLocal := Local.NewLocalManager("api-server", "handlers")
+apiLocal := local.NewLocalManager("api-server", "handlers")
 apiLocal.CreateLocal("handlers")
 
-workerLocal := Local.NewLocalManager("worker-pool", "jobs")
+workerLocal := local.NewLocalManager("worker-pool", "jobs")
 workerLocal.CreateLocal("jobs")
 ```
 
 ### Pattern 3: Function-Level Coordination
 
 ```go
-localMgr := Local.NewLocalManager("my-app", "workers")
+localMgr := local.NewLocalManager("my-app", "workers")
 localMgr.CreateLocal("workers")
 
 // Spawn multiple workers
@@ -510,7 +512,7 @@ for i := 0; i < 10; i++ {
     localMgr.Go("worker", func(ctx context.Context) error {
         // Do work
         return nil
-    }, Local.AddToWaitGroup("worker"))
+    }, local.AddToWaitGroup("worker"))
 }
 
 // Wait for all workers to complete
@@ -530,22 +532,22 @@ localMgr.Go("long-task", func(ctx context.Context) error {
             // Long-running task
         }
     }
-}, Local.WithTimeout(5 * time.Minute))
+}, local.WithTimeout(5 * time.Minute))
 ```
 
 ### Pattern 5: HTTP Server Integration
 
 ```go
-globalMgr := Global.NewGlobalManager()
+globalMgr := global.NewGlobalManager()
 globalMgr.Init()
 
 // Enable metrics
 globalMgr.UpdateMetadata("SET_METRICS_URL", ":9090")
 
-appMgr := App.NewAppManager("api-server")
+appMgr := app.NewAppManager("api-server")
 appMgr.CreateApp()
 
-localMgr := Local.NewLocalManager("api-server", "server")
+localMgr := local.NewLocalManager("api-server", "server")
 localMgr.CreateLocal("server")
 
 localMgr.Go("http-server", func(ctx context.Context) error {
@@ -577,7 +579,7 @@ localMgr.Go("http-server", func(ctx context.Context) error {
 The global context automatically handles SIGINT and SIGTERM signals. No manual shutdown code needed.
 
 ```go
-globalMgr := Global.NewGlobalManager()
+globalMgr := global.NewGlobalManager()
 globalMgr.Init()
 
 // ... setup your application ...
@@ -633,12 +635,13 @@ globalMgr.Shutdown(true)
 Always check for errors during initialization.
 
 ```go
-globalMgr := Global.NewGlobalManager()
-if err := globalMgr.Init(); err != nil {
+globalMgr := global.NewGlobalManager()
+_, err := globalMgr.Init()
+if err != nil {
     log.Fatalf("Failed to initialize: %v", err)
 }
 
-appMgr := App.NewAppManager("my-app")
+appMgr := app.NewAppManager("my-app")
 app, err := appMgr.CreateApp()
 if err != nil {
     log.Fatalf("Failed to create app: %v", err)
@@ -678,8 +681,14 @@ localMgr.Go("worker", func(ctx context.Context) error {
 You can create custom child contexts for fine-grained control.
 
 ```go
+// Get app manager instance to access context
+app, err := appMgr.CreateApp()
+if err != nil {
+    log.Fatalf("Failed to get app: %v", err)
+}
+
 // Get app context
-appCtx, _ := appMgr.GetAppContext()
+appCtx, _ := app.GetAppContext()
 
 // Create custom child context with timeout
 customCtx, cancel := context.WithTimeout(appCtx, 5*time.Second)
