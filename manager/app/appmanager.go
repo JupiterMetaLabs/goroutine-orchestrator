@@ -11,17 +11,55 @@ import (
 	"github.com/JupiterMetaLabs/goroutine-orchestrator/types"
 )
 
+// AppManagerStruct represents an application-level manager that coordinates all local managers
+// within a specific application or service. It provides methods to create, manage, and shutdown
+// local managers and track goroutines at the application level.
 type AppManagerStruct struct {
+	// AppName is the unique identifier for this application manager
 	AppName string
 }
 
-
+// NewAppManager creates and returns a new AppManager instance for the specified application name.
+// This constructor does not initialize the app manager - call CreateApp() to register it with the global manager.
+//
+// Parameters:
+//   - Appname: Unique identifier for the application (e.g., "api-server", "worker-pool")
+//
+// Returns:
+//   - An AppGoroutineManagerInterface implementation that can be used to create and manage local managers
+//
+// Example:
+//
+//	appMgr := app.NewAppManager("my-app")
+//	app, err := appMgr.CreateApp()
 func NewAppManager(Appname string) interfaces.AppGoroutineManagerInterface {
 	return &AppManagerStruct{
 		AppName: Appname,
 	}
 }
 
+// CreateApp initializes and registers the app manager with the global manager.
+// This method is idempotent - calling it multiple times returns the existing app manager.
+// If the global manager is not initialized, it will be created automatically.
+//
+// The method performs the following operations:
+//   - Checks if app manager already exists (returns existing if found)
+//   - Auto-initializes global manager if not present
+//   - Creates app-level context derived from global context
+//   - Registers the app manager with the global manager
+//   - Records metrics for the create operation
+//
+// Returns:
+//   - *types.AppManager: The initialized app manager instance
+//   - error: nil on success, error if initialization fails
+//
+// Example:
+//
+//	appMgr := app.NewAppManager("api-server")
+//	app, err := appMgr.CreateApp()
+//	if err != nil {
+//	    log.Fatalf("Failed to create app: %v", err)
+//	}
 func (AM *AppManagerStruct) CreateApp() (*types.AppManager, error) {
 	startTime := time.Now()
 	defer func() {
@@ -51,6 +89,34 @@ func (AM *AppManagerStruct) CreateApp() (*types.AppManager, error) {
 	return app, nil
 }
 
+// Shutdown gracefully or forcefully shuts down all local managers within this app manager.
+// This method coordinates the shutdown of all local managers and their goroutines.
+//
+// Parameters:
+//   - safe: If true, performs graceful shutdown (waits for goroutines with timeout, then force cancels).
+//     If false, immediately cancels all contexts without waiting.
+//
+// Shutdown behavior:
+//
+//   Safe shutdown (safe=true):
+//   - Triggers shutdown on all local managers concurrently
+//   - Waits for local managers to complete using wait groups
+//   - Each local manager performs graceful → timeout → force cancellation
+//   - Records shutdown duration and any errors
+//
+//   Unsafe shutdown (safe=false):
+//   - Immediately cancels all local manager contexts
+//   - Cancels app manager's context
+//   - No waiting for goroutines to complete
+//
+// Returns:
+//   - error: nil on success, error if app manager not found or shutdown fails
+//
+// Example:
+//	Graceful shutdown
+//	if err := appMgr.Shutdown(true); err != nil {
+//	    log.Printf("Shutdown error: %v", err)
+//	}
 func (AM *AppManagerStruct) Shutdown(safe bool) error {
 	startTime := time.Now()
 	shutdownType := "unsafe"
@@ -123,6 +189,27 @@ func (AM *AppManagerStruct) Shutdown(safe bool) error {
 	return nil
 }
 
+// CreateLocal creates a new local manager within this app manager.
+// A local manager is used to organize and manage goroutines for a specific module or file.
+//
+// Parameters:
+//   - localName: Unique identifier for the local manager within this app (e.g., "handlers", "workers", "jobs")
+//
+// The method performs the following:
+//   - Creates a new LocalManager instance
+//   - Initializes and registers it with this app manager
+//   - Records metrics for the create operation
+//
+// Returns:
+//   - *types.LocalManager: The initialized local manager instance
+//   - error: Returns error if local manager creation fails or if not found
+//
+// Example:
+//
+//	localMgr, err := appMgr.CreateLocal("http-handlers")
+//	if err != nil {
+//	    log.Fatalf("Failed to create local manager: %v", err)
+//	}
 func (AM *AppManagerStruct) CreateLocal(localName string) (*types.LocalManager, error) {
 	startTime := time.Now()
 	defer func() {
@@ -148,6 +235,24 @@ func (AM *AppManagerStruct) CreateLocal(localName string) (*types.LocalManager, 
 	return Manager, nil
 }
 
+// GetAllLocalManagers retrieves all local managers registered with this app manager.
+// This returns a slice of all local manager instances within the application.
+//
+// Returns:
+//   - []*types.LocalManager: Slice of all local managers in this app
+//   - error: Returns error if app manager is not found or not initialized
+//
+// Note: This creates a new slice from the internal map. For just counting, use GetLocalManagerCount() instead.
+//
+// Example:
+//
+//	locals, err := appMgr.GetAllLocalManagers()
+//	if err != nil {
+//	    log.Printf("Error: %v", err)
+//	}
+//	for _, local := range locals {
+//	    fmt.Printf("Local: %s\n", local.LocalName)
+//	}
 func (AM *AppManagerStruct) GetAllLocalManagers() ([]*types.LocalManager, error) {
 	appManager, err := types.GetAppManager(AM.AppName)
 	if err != nil {
@@ -156,6 +261,21 @@ func (AM *AppManagerStruct) GetAllLocalManagers() ([]*types.LocalManager, error)
 	return LocalHelper.NewLocalHelper().MapToSlice(appManager.GetLocalManagers()), nil
 }
 
+// GetLocalManager retrieves a specific local manager by name from this app manager.
+//
+// Parameters:
+//   - localName: The unique name of the local manager to retrieve
+//
+// Returns:
+//   - *types.LocalManager: The requested local manager instance
+//   - error: Returns error if app manager or local manager is not found
+//
+// Example:
+//
+//	localMgr, err := appMgr.GetLocalManager("handlers")
+//	if err != nil {
+//	    log.Printf("Local manager not found: %v", err)
+//	}
 func (AM *AppManagerStruct) GetLocalManager(localName string) (*types.LocalManager, error) {
 	appManager, err := types.GetAppManager(AM.AppName)
 	if err != nil {
@@ -164,6 +284,25 @@ func (AM *AppManagerStruct) GetLocalManager(localName string) (*types.LocalManag
 	return appManager.GetLocalManager(localName)
 }
 
+// GetAllGoroutines retrieves all tracked goroutines across all local managers in this app.
+// This aggregates routines from all local managers within the application.
+//
+// WARNING: This method creates a new slice and should be used sparingly as it can consume
+// significant memory if there are many goroutines. For just counting, use GetGoroutineCount() instead.
+//
+// Returns:
+//   - []*types.Routine: Slice containing all goroutines in this app manager
+//   - error: Returns error if app manager is not found
+//
+// Time Complexity: O(n*m) where n is the number of local managers and m is the average number of goroutines per local manager
+//
+// Example:
+//
+//	goroutines, err := appMgr.GetAllGoroutines()
+//	if err != nil {
+//	    log.Printf("Error: %v", err)
+//	}
+//	fmt.Printf("Total goroutines in app: %d\n", len(goroutines))
 func (AM *AppManagerStruct) GetAllGoroutines() ([]*types.Routine, error) {
 	// Return the All Goroutines for the particular app manager
 	// Dont use this unless you need to get all the goroutines for the particular app manager. This would take significant memory.
@@ -180,6 +319,20 @@ func (AM *AppManagerStruct) GetAllGoroutines() ([]*types.Routine, error) {
 	return allGoroutines, nil
 }
 
+// GetGoroutineCount returns the total number of tracked goroutines in this app manager.
+// This method aggregates counts from all local managers without creating intermediate slices,
+// making it more memory efficient than GetAllGoroutines().
+//
+// Returns:
+//   - int: Total count of goroutines across all local managers in this app
+//     Returns 0 if app manager is not found
+//
+// Performance: O(n) where n is the number of local managers, but with minimal memory allocation
+//
+// Example:
+//
+//	count := appMgr.GetGoroutineCount()
+//	log.Printf("App has %d active goroutines", count)
 func (AM *AppManagerStruct) GetGoroutineCount() int {
 	// Dont Use GetAllGoroutines() as it will create a new slice - memory usage would be O(n)
 	// and it will be a performance issue
@@ -196,8 +349,17 @@ func (AM *AppManagerStruct) GetGoroutineCount() int {
 	return count
 }
 
+// GetLocalManagerCount returns the total number of local managers registered with this app manager.
+//
+// Returns:
+//   - int: Count of local managers in this app
+//     Returns 0 if app manager is not found
+//
+// Example:
+//
+//	count := appMgr.GetLocalManagerCount()
+//	log.Printf("App has %d local managers", count)
 func (AM *AppManagerStruct) GetLocalManagerCount() int {
-	// Return the Local Manager count for the particular app manager
 	appManager, err := types.GetAppManager(AM.AppName)
 	if err != nil {
 		return 0
@@ -205,6 +367,22 @@ func (AM *AppManagerStruct) GetLocalManagerCount() int {
 	return appManager.GetLocalManagerCount()
 }
 
+// GetLocalManagerByName retrieves a specific local manager by its name.
+// This is an alias for GetLocalManager() provided for API consistency.
+//
+// Parameters:
+//   - localName: The unique name of the local manager to retrieve
+//
+// Returns:
+//   - *types.LocalManager: The requested local manager instance
+//   - error: Returns error if app manager or local manager is not found
+//
+// Example:
+//
+//	localMgr, err := appMgr.GetLocalManagerByName("workers")
+//	if err != nil {
+//	    log.Printf("Local manager not found: %v", err)
+//	}
 func (AM *AppManagerStruct) GetLocalManagerByName(localName string) (*types.LocalManager, error) {
 	appManager, err := types.GetAppManager(AM.AppName)
 	if err != nil {

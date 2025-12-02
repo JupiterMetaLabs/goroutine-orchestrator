@@ -12,11 +12,32 @@ import (
 	"github.com/JupiterMetaLabs/goroutine-orchestrator/types"
 )
 
+// LocalManagerStruct manages goroutines for a specific module or file within an application.
+// It provides methods to spawn, track, and shutdown goroutines with advanced features like
+// function-level wait groups, panic recovery, timeouts, and hierarchical shutdown coordination.
+// This is the third level in the manager hierarchy (Global → App → Local → Routine).
 type LocalManagerStruct struct {
-	AppName   string
+	// AppName is the name of the parent application manager
+	AppName string
+	// LocalName is the unique identifier for this local manager within the app
 	LocalName string
 }
 
+// NewLocalManager creates and returns a new LocalManager instance.
+// This constructor does not initialize the local manager - call CreateLocal() to register it
+// with the app manager and set up tracking structures.
+//
+// Parameters:
+//   - appName: Name of the parent application manager
+//   - localName: Unique identifier for this local manager (e.g., "handlers", "workers")
+//
+// Returns:
+//   - An implementation of LocalGoroutineManagerInterface
+//
+// Example:
+//
+//	localMgr := local.NewLocalManager("api-server", "http-handlers")
+//	local, err := localMgr.CreateLocal("http-handlers")
 func NewLocalManager(appName, localName string) interfaces.LocalGoroutineManagerInterface {
 	return &LocalManagerStruct{
 		AppName:   appName,
@@ -24,6 +45,31 @@ func NewLocalManager(appName, localName string) interfaces.LocalGoroutineManager
 	}
 }
 
+// CreateLocal initializes and registers the local manager with its parent app manager.
+// This method is idempotent - calling it multiple times returns the existing local manager.
+//
+// Parameters:
+//   - localName: The name for this local manager (must match the name used in constructor)
+//
+// The method performs the following operations:
+//   - Retrieves the parent app manager
+//   - Checks if local manager already exists (returns existing if found)
+//   - Creates local-level context derived from app context
+//   - Initializes local mutex for thread-safe operations
+//   - Sets up local wait group for coordinated shutdown
+//   - Records metrics for the create operation
+//
+// Returns:
+//   - *types.LocalManager: The initialized local manager instance
+//   - error: nil on success, error if app manager not found or creation fails
+//
+// Example:
+//
+//	localMgr := local.NewLocalManager("api-server", "handlers")
+//	local, err := localMgr.CreateLocal("handlers")
+//	if err != nil {
+//	    log.Fatalf("Failed to create local manager: %v", err)
+//	}
 func (LM *LocalManagerStruct) CreateLocal(localName string) (*types.LocalManager, error) {
 	startTime := time.Now()
 	defer func() {
@@ -59,7 +105,40 @@ func (LM *LocalManagerStruct) CreateLocal(localName string) (*types.LocalManager
 	return localManager, nil
 }
 
-// Shutdowner
+// Shutdown gracefully or forcefully shuts down all goroutines managed by this local manager.
+// This method implements a sophisticated shutdown strategy with graceful → timeout → force cancellation.
+//
+// Parameters:
+//   - safe: If true, performs graceful shutdown with timeout protection.
+//     If false, immediately cancels all goroutines without waiting.
+//
+// Safe Shutdown Flow (safe=true):
+//  1. Collects all tracked goroutines and their function names
+//  2. Attempts graceful shutdown per function with timeout
+//  3. Waits for main wait group with global shutdown timeout
+//  4. If timeout occurs: force cancels remaining goroutines
+//  5. Cleans up all function wait groups (via defer)
+//  6. Removes all routines from tracking map
+//  7. Cancels local manager's context
+//
+// Unsafe Shutdown Flow (safe=false):
+//  1. Immediately cancels all routine contexts
+//  2. Removes all routines from tracking map
+//  3. Cancels local manager's context
+//  4. Cleans up all function wait groups
+//  5. No waiting for goroutines to complete
+//
+// Returns:
+//   - error: nil on success, error if local manager not found
+//
+// Note: Function wait group cleanup is guaranteed via defer, even on panic or timeout.
+//
+// Example:
+//
+//	// Graceful shutdown with timeout protection
+//	if err := localMgr.Shutdown(true); err != nil {
+//	    log.Printf("Shutdown error: %v", err)
+//	}
 func (LM *LocalManagerStruct) Shutdown(safe bool) error {
 	startTime := time.Now()
 	shutdownType := "unsafe"
@@ -206,7 +285,32 @@ func (LM *LocalManagerStruct) Shutdown(safe bool) error {
 	return nil
 }
 
-// FunctionShutdowner
+// ShutdownFunction gracefully shuts down all goroutines with a specific function name.
+// This allows selective shutdown of goroutine groups without affecting others.
+//
+// Parameters:
+//   - functionName: Name of the function to shutdown (all goroutines with this name)
+//   - timeout: Maximum time to wait for graceful shutdown before force cancellation
+//
+// Shutdown Process:
+//  1. Retrieves all goroutines with the specified function name
+//  2. Cancels their contexts to signal shutdown
+//  3. Waits for function wait group with timeout
+//  4. If timeout: removes routines from tracking and cleans up wait group
+//  5. If success: cleans up wait group
+//  6. Records metrics for shutdown duration
+//
+// Returns:
+//   - error: nil if all goroutines shutdown within timeout
+//     Returns error with timeout message if timeout occurs
+//
+// Example:
+//
+//	// Shutdown all "worker" goroutines with 10 second timeout
+//	err := localMgr.ShutdownFunction("worker", 10*time.Second)
+//	if err != nil {
+//	    log.Printf("Function shutdown timeout: %v", err)
+//	}
 func (LM *LocalManagerStruct) ShutdownFunction(functionName string, timeout time.Duration) error {
 	startTime := time.Now()
 	defer func() {
@@ -263,22 +367,53 @@ func (LM *LocalManagerStruct) ShutdownFunction(functionName string, timeout time
 	return nil
 }
 
-// GoroutineSpawner
-// Go spawns a new goroutine, tracks it in the LocalManager, and returns the routine ID.
-// The goroutine is spawned with a context derived from the LocalManager's parent context.
-// The done channel is closed when the goroutine completes.
+// Go spawns a new tracked goroutine with advanced lifecycle management.
+// The goroutine is automatically tracked, monitored via metrics, and cleaned up on completion.
 //
-// Options can be provided to configure the goroutine:
-//   - WithTimeout(duration): Sets a timeout for the goroutine. Context is cancelled on timeout.
-//   - WithPanicRecovery(enabled): Enables panic recovery. Panics are logged and goroutine completes normally.
-//   - AddToWaitGroup(functionName): Adds the goroutine to a function wait group for coordinated shutdown.
+// Parameters:
+//   - functionName: Logical name for the goroutine (used for grouping and metrics)
+//   - workerFunc: The function to execute in the goroutine (receives context)
+//   - opts: Optional configuration (timeout, panic recovery, wait group)
+//
+// Available Options:
+//   - WithTimeout(duration): Auto-cancels goroutine after specified duration
+//   - WithPanicRecovery(bool): Enable/disable panic recovery (enabled by default)
+//   - AddToWaitGroup(name): Add to function-level wait group for coordinated shutdown
+//
+// Goroutine Lifecycle:
+//  1. Creates child context derived from local manager's context
+//  2. Applies timeout if specified
+//  3. Creates routine instance with unique ID
+//  4. Adds to tracking map and wait groups
+//  5. Spawns goroutine with context
+//  6. Executes worker function
+//  7. On completion/panic: records metrics, decrements wait groups, closes done channel
+//  8. Automatically removes from tracking map to prevent memory leaks
+//
+// Context Cancellation:
+//
+//	The context passed to workerFunc will be cancelled when:
+//	- Timeout expires (if WithTimeout was used)
+//	- Local manager shuts down
+//	- App manager shuts down
+//	- Global manager shuts down
+//	- Manual cancellation via CancelRoutine()
+//
+// Returns:
+//   - error: nil on success, error if local manager not found
 //
 // Example:
 //
-//	localMgr.Go("worker", func(ctx context.Context) error { ... },
-//	    WithTimeout(5*time.Second),
-//	    WithPanicRecovery(true),
-//	    AddToWaitGroup("worker"))
+//	err := localMgr.Go("http-handler", func(ctx context.Context) error {
+//	    for {
+//	        select {
+//	        case <-ctx.Done():
+//	            return nil  // Graceful shutdown
+//	        default:
+//	            // Do work
+//	        }
+//	    }
+//	}, local.WithTimeout(5*time.Minute), local.AddToWaitGroup("handlers"))
 func (LM *LocalManagerStruct) Go(functionName string, workerFunc func(ctx context.Context) error, opts ...interfaces.GoroutineOption) error {
 	// Apply default options
 	options := defaultGoroutineOptions()
@@ -291,8 +426,25 @@ func (LM *LocalManagerStruct) Go(functionName string, workerFunc func(ctx contex
 	return LM.spawnGoroutine(functionName, workerFunc, options)
 }
 
-// spawnGoroutine is the internal implementation for spawning goroutines.
-// It accepts options to configure timeout, panic recovery, and wait group behavior.
+// spawnGoroutine is the internal implementation for spawning and tracking goroutines.
+// It handles context creation, wait group management, panic recovery, and cleanup.
+//
+// Parameters:
+//   - functionName: Logical name for grouping and metrics
+//   - workerFunc: The function to execute in the goroutine
+//   - opts: Configuration options (timeout, panic recovery, wait group)
+//
+// Implementation Details:
+//   - Creates child context with optional timeout
+//   - Increments function wait group (if specified) BEFORE spawning
+//   - Increments local manager wait group for safe shutdown
+//   - Spawns goroutine with panic recovery (if enabled)
+//   - Records creation, completion, and error metrics
+//   - Automatically cleans up on completion (wait groups, tracking map, done channel)
+//   - Ensures no goroutine leaks via RemoveRoutine() call
+//
+// Returns:
+//   - error: nil on successful spawn, error if local manager not found
 func (LM *LocalManagerStruct) spawnGoroutine(functionName string, workerFunc func(ctx context.Context) error, opts *goroutineOptions) error {
 	// Get the types.LocalManager instance
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
@@ -403,7 +555,24 @@ func (LM *LocalManagerStruct) spawnGoroutine(functionName string, workerFunc fun
 	return nil
 }
 
-// GoroutineLister
+// GetAllGoroutines retrieves all tracked goroutines in this local manager.
+// This returns a slice of all routine instances managed by this local manager.
+//
+// Returns:
+//   - []*types.Routine: Slice of all goroutines in this local manager
+//   - error: Returns error if local manager is not found
+//
+// Note: Creates a new slice from the internal map. For just counting, use GetGoroutineCount() instead.
+//
+// Example:
+//
+//	routines, err := localMgr.GetAllGoroutines()
+//	if err != nil {
+//	    log.Printf("Error: %v", err)
+//	}
+//	for _, routine := range routines {
+//	    fmt.Printf("Routine: %s, Function: %s\n", routine.GetID(), routine.GetFunctionName())
+//	}
 func (LM *LocalManagerStruct) GetAllGoroutines() ([]*types.Routine, error) {
 
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
@@ -420,6 +589,19 @@ func (LM *LocalManagerStruct) GetAllGoroutines() ([]*types.Routine, error) {
 	return result, nil
 }
 
+// GetGoroutineCount returns the number of tracked goroutines in this local manager.
+// This uses an atomic counter for O(1) lock-free reads, making it highly efficient.
+//
+// Returns:
+//   - int: Count of active goroutines
+//     Returns 0 if local manager is not found
+//
+// Performance: O(1) with atomic read, no locking required
+//
+// Example:
+//
+//	count := localMgr.GetGoroutineCount()
+//	log.Printf("Active goroutines: %d", count)
 func (LM *LocalManagerStruct) GetGoroutineCount() int {
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
@@ -428,7 +610,29 @@ func (LM *LocalManagerStruct) GetGoroutineCount() int {
 	return localManager.GetRoutineCount()
 }
 
-// FunctionWaitGroupCreator
+// NewFunctionWaitGroup creates or retrieves a function-level wait group.
+// Function wait groups allow coordinated shutdown of all goroutines with the same function name.
+//
+// Parameters:
+//   - ctx: Context for the operation (currently unused, reserved for future use)
+//   - functionName: Name of the function to create/get wait group for
+//
+// Behavior:
+//   - If wait group already exists: returns existing wait group
+//   - If not exists: creates new wait group and returns it
+//   - Thread-safe: protected by local manager's mutex
+//
+// Returns:
+//   - *sync.WaitGroup: The function wait group
+//   - error: Returns error if local manager is not found
+//
+// Example:
+//
+//	wg, err := localMgr.NewFunctionWaitGroup(ctx, "worker")
+//	if err != nil {
+//	    log.Printf("Error creating wait group: %v", err)
+//	}
+//	// Use this WaitGroup is typically handled automatically by Go() with AddToWaitGroup option
 func (LM *LocalManagerStruct) NewFunctionWaitGroup(ctx context.Context, functionName string) (*sync.WaitGroup, error) {
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
@@ -453,8 +657,23 @@ func (LM *LocalManagerStruct) NewFunctionWaitGroup(ctx context.Context, function
 	return localManager.GetFunctionWg(functionName)
 }
 
-// Multiple go routines can have same function name
-// This function is to get the routines by function name
+// GetRoutinesByFunctionName retrieves all goroutines with a specific function name.
+// This allows filtering goroutines by their logical grouping.
+//
+// Parameters:
+//   - functionName: The function name to filter by
+//
+// Returns:
+//   - []*types.Routine: Slice of all goroutines matching the function name
+//   - error: Returns error if local manager is not found
+//
+// Example:
+//
+//	workers, err := localMgr.GetRoutinesByFunctionName("worker")
+//	if err != nil {
+//	    log.Printf("Error: %v", err)
+//	}
+//	log.Printf("Found %d worker goroutines", len(workers))
 func (LM *LocalManagerStruct) GetRoutinesByFunctionName(functionName string) ([]*types.Routine, error) {
 	result := make([]*types.Routine, 0)
 	routines, err := LM.GetAllGoroutines()
