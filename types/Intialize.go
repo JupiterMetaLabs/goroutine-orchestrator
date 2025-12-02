@@ -70,8 +70,8 @@ func (Is Initializer) Routine(appName, localName, routineID string) bool {
 	}
 
 	// Local RLock and RUnlock
-	localMgr.LockLocalReadMutex()
+	localMgr.lockLocalReadMutex()
 	_, ok = localMgr.Routines[routineID]
-	localMgr.UnlockLocalReadMutex()
+	localMgr.unlockLocalReadMutex()
 	return ok
 }

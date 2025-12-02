@@ -134,10 +134,7 @@ func (LM *LocalManagerStruct) Shutdown(safe bool) error {
 		// Step 3: Wait for main wait group with timeout
 		done := make(chan struct{})
 		go func() {
-			// Lock to safely read Wg pointer to avoid race condition
-			localManager.LockLocalReadMutex()
-			wg := localManager.Wg
-			localManager.UnlockLocalReadMutex()
+			wg := localManager.GetLocalWaitGroup()
 			if wg != nil {
 				wg.Wait()
 			}

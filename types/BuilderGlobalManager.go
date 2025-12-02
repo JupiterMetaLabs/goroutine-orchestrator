@@ -27,40 +27,40 @@ func NewGlobalManager() *GlobalManager {
 // Mutex Lock APIs
 // LockGlobalReadMutex locks the global read mutex for the global manager - This is used to read the global manager's data
 func (GM *GlobalManager) LockGlobalReadMutex() {
-	if GM.GlobalMu == nil {
+	if GM.globalMu == nil {
 		GM.SetGlobalMutex()
 	}
-	GM.GlobalMu.RLock()
+	GM.globalMu.RLock()
 }
 
 // UnlockGlobalReadMutex unlocks the global read mutex for the global manager - This is used to read the global manager's data
 func (GM *GlobalManager) UnlockGlobalReadMutex() {
-	if GM.GlobalMu == nil {
+	if GM.globalMu == nil {
 		GM.SetGlobalMutex()
 	}
-	GM.GlobalMu.RUnlock()
+	GM.globalMu.RUnlock()
 }
 
 // LockGlobalWriteMutex locks the global write mutex for the global manager - This is used to write the global manager's data
 func (GM *GlobalManager) LockGlobalWriteMutex() {
-	if GM.GlobalMu == nil {
+	if GM.globalMu == nil {
 		GM.SetGlobalMutex()
 	}
-	GM.GlobalMu.Lock()
+	GM.globalMu.Lock()
 }
 
 // UnlockGlobalWriteMutex unlocks the global write mutex for the global manager - This is used to write the global manager's data
 func (GM *GlobalManager) UnlockGlobalWriteMutex() {
-	if GM.GlobalMu == nil {
+	if GM.globalMu == nil {
 		GM.SetGlobalMutex()
 	}
-	GM.GlobalMu.Unlock()
+	GM.globalMu.Unlock()
 }
 
 // >>> Set APIs
 // SetGlobalMutex sets the global mutex for the global manager
 func (GM *GlobalManager) SetGlobalMutex() *GlobalManager {
-	GM.GlobalMu = &sync.RWMutex{}
+	GM.globalMu = &sync.RWMutex{}
 	return GM
 }
 
@@ -124,7 +124,7 @@ func (GM *GlobalManager) GetGlobalMutex() *sync.RWMutex {
 	// Lock and update
 	GM.LockGlobalReadMutex()
 	defer GM.UnlockGlobalReadMutex()
-	return GM.GlobalMu
+	return GM.globalMu
 }
 
 // GetGlobalContext gets the global context for the global manager

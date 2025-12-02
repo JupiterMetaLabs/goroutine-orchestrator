@@ -21,7 +21,7 @@ var (
 
 // GlobalManager manages all app-level managers
 type GlobalManager struct {
-	GlobalMu    *sync.RWMutex
+	globalMu    *sync.RWMutex
 	AppManagers map[string]*AppManager
 	Ctx         context.Context
 	Cancel      context.CancelFunc
@@ -31,7 +31,7 @@ type GlobalManager struct {
 
 // AppManager manages local-level managers for a specific app/module
 type AppManager struct {
-	AppMu         *sync.RWMutex
+	appMu         *sync.RWMutex
 	AppName       string
 	LocalManagers map[string]*LocalManager
 	Ctx           context.Context
@@ -42,7 +42,7 @@ type AppManager struct {
 
 // LocalManager manages goroutines for a specific file/module within an app
 type LocalManager struct {
-	LocalMu     *sync.RWMutex
+	localMu     *sync.RWMutex
 	LocalName   string
 	Routines    map[string]*Routine
 	Ctx         context.Context
@@ -66,7 +66,7 @@ type Routine struct {
 }
 
 type Metadata struct {
-	mu *sync.RWMutex
+	metadataMu *sync.RWMutex
 	MaxRoutines     int
 	Metrics         bool
 	MetricsURL      string

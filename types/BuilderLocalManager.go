@@ -38,40 +38,40 @@ func newLocalManager(localName string, appName string) *LocalManager {
 
 // Lock APIs
 // LockAppReadMutex locks the app read mutex for the app manager - This is used to read the app manager's data
-func (LM *LocalManager) LockLocalReadMutex() {
-	if LM.LocalMu == nil {
+func (LM *LocalManager) lockLocalReadMutex() {
+	if LM.localMu == nil {
 		LM.SetLocalMutex()
 	}
-	LM.LocalMu.RLock()
+	LM.localMu.RLock()
 }
 
 // UnlockAppReadMutex unlocks the app read mutex for the app manager - This is used to read the app manager's data
-func (LM *LocalManager) UnlockLocalReadMutex() {
-	if LM.LocalMu == nil {
+func (LM *LocalManager) unlockLocalReadMutex() {
+	if LM.localMu == nil {
 		LM.SetLocalMutex()
 	}
-	LM.LocalMu.RUnlock()
+	LM.localMu.RUnlock()
 }
 
 // LockAppWriteMutex locks the app write mutex for the app manager - This is used to write the app manager's data
-func (LM *LocalManager) LockLocalWriteMutex() {
-	if LM.LocalMu == nil {
+func (LM *LocalManager) lockLocalWriteMutex() {
+	if LM.localMu == nil {
 		LM.SetLocalMutex()
 	}
-	LM.LocalMu.Lock()
+	LM.localMu.Lock()
 }
 
 // UnlockAppWriteMutex unlocks the app write mutex for the app manager - This is used to write the app manager's data
-func (LM *LocalManager) UnlockLocalWriteMutex() {
-	if LM.LocalMu == nil {
+func (LM *LocalManager) unlockLocalWriteMutex() {
+	if LM.localMu == nil {
 		LM.SetLocalMutex()
 	}
-	LM.LocalMu.Unlock()
+	LM.localMu.Unlock()
 }
 
 // Set the Local mutex to the local manager
 func (LM *LocalManager) SetLocalMutex() *LocalManager {
-	LM.LocalMu = &sync.RWMutex{}
+	LM.localMu = &sync.RWMutex{}
 	return LM
 }
 
@@ -79,8 +79,8 @@ func (LM *LocalManager) SetLocalMutex() *LocalManager {
 // SetLocalName sets the name of the local manager
 func (LM *LocalManager) SetLocalName(localName string) *LocalManager {
 	// Lock and update
-	LM.LockLocalWriteMutex()
-	defer LM.UnlockLocalWriteMutex()
+	LM.lockLocalWriteMutex()
+	defer LM.unlockLocalWriteMutex()
 	LM.LocalName = localName
 	return LM
 }
@@ -88,8 +88,8 @@ func (LM *LocalManager) SetLocalName(localName string) *LocalManager {
 // SetLocalContext sets the context for the local manager
 func (LM *LocalManager) SetLocalContext() *LocalManager {
 	// Lock and update
-	LM.LockLocalWriteMutex()
-	defer LM.UnlockLocalWriteMutex()
+	LM.lockLocalWriteMutex()
+	defer LM.unlockLocalWriteMutex()
 	ctx := Context.GetAppContext(Prefix_LocalManager + LM.LocalName).Get()
 	Done := func() {
 		Context.GetAppContext(Prefix_LocalManager + LM.LocalName).Done(ctx)
@@ -102,8 +102,8 @@ func (LM *LocalManager) SetLocalContext() *LocalManager {
 // SetLocalWaitGroup sets the wait group for the local manager
 func (LM *LocalManager) SetLocalWaitGroup() *LocalManager {
 	// Lock and update
-	LM.LockLocalWriteMutex()
-	defer LM.UnlockLocalWriteMutex()
+	LM.lockLocalWriteMutex()
+	defer LM.unlockLocalWriteMutex()
 	LM.Wg = &sync.WaitGroup{}
 	return LM
 }
@@ -111,8 +111,8 @@ func (LM *LocalManager) SetLocalWaitGroup() *LocalManager {
 // SetParentContext sets the parent context for the local manager
 func (LM *LocalManager) SetParentContext(ctx context.Context) *LocalManager {
 	// Lock and update
-	LM.LockLocalWriteMutex()
-	defer LM.UnlockLocalWriteMutex()
+	LM.lockLocalWriteMutex()
+	defer LM.unlockLocalWriteMutex()
 
 	LM.ParentCtx = ctx
 	return LM
@@ -121,8 +121,8 @@ func (LM *LocalManager) SetParentContext(ctx context.Context) *LocalManager {
 // SpawnChild sets the child context for the local manager
 func (LM *LocalManager) SpawnChild() (context.Context, context.CancelFunc) {
 	// Lock and update
-	LM.LockLocalWriteMutex()
-	defer LM.UnlockLocalWriteMutex()
+	LM.lockLocalWriteMutex()
+	defer LM.unlockLocalWriteMutex()
 
 	ctx, cancel := Context.SpawnChild(LM.Ctx)
 	return ctx, cancel
@@ -131,8 +131,8 @@ func (LM *LocalManager) SpawnChild() (context.Context, context.CancelFunc) {
 // AddRoutine adds a new routine to the local manager
 func (LM *LocalManager) AddRoutine(routine *Routine) *LocalManager {
 	// Lock and update
-	LM.LockLocalWriteMutex()
-	defer LM.UnlockLocalWriteMutex()
+	LM.lockLocalWriteMutex()
+	defer LM.unlockLocalWriteMutex()
 
 	LM.Routines[routine.ID] = routine
 	// Atomically increment routine count for lock-free reads
@@ -144,8 +144,8 @@ func (LM *LocalManager) AddRoutine(routine *Routine) *LocalManager {
 func (LM *LocalManager) RemoveRoutine(routine *Routine, safe bool) *LocalManager {
 
 	// Lock -> remove the routine -> unlock
-	LM.LockLocalWriteMutex()
-	defer LM.UnlockLocalWriteMutex()
+	LM.lockLocalWriteMutex()
+	defer LM.unlockLocalWriteMutex()
 
 	// Cancel the routine's context to signal it to stop
 	if routine.Cancel != nil {
@@ -166,8 +166,8 @@ func (LM *LocalManager) RemoveRoutine(routine *Routine, safe bool) *LocalManager
 // AddFunctionWg adds a new function wait group to the local manager
 func (LM *LocalManager) AddFunctionWg(functionName string) *LocalManager {
 	// Lock -> add the function wg -> unlock
-	LM.LockLocalWriteMutex()
-	defer LM.UnlockLocalWriteMutex()
+	LM.lockLocalWriteMutex()
+	defer LM.unlockLocalWriteMutex()
 
 	LM.FunctionWgs[functionName] = &sync.WaitGroup{}
 	return LM
@@ -177,8 +177,8 @@ func (LM *LocalManager) AddFunctionWg(functionName string) *LocalManager {
 func (LM *LocalManager) RemoveFunctionWg(functionName string) *LocalManager {
 
 	// Lock -> remove the function wg -> unlock
-	LM.LockLocalWriteMutex()
-	defer LM.UnlockLocalWriteMutex()
+	LM.lockLocalWriteMutex()
+	defer LM.unlockLocalWriteMutex()
 
 	delete(LM.FunctionWgs, functionName)
 	return LM
@@ -187,8 +187,8 @@ func (LM *LocalManager) RemoveFunctionWg(functionName string) *LocalManager {
 // >>> Get APIs
 // GetRoutine gets a specific routine for the local manager
 func (LM *LocalManager) GetRoutine(routineID string) (*Routine, error) {
-	LM.LockLocalReadMutex()
-	defer LM.UnlockLocalReadMutex()
+	LM.lockLocalReadMutex()
+	defer LM.unlockLocalReadMutex()
 
 	if _, ok := LM.Routines[routineID]; !ok {
 		return nil, fmt.Errorf("%w: %s", Errors.ErrRoutineNotFound, routineID)
@@ -198,8 +198,8 @@ func (LM *LocalManager) GetRoutine(routineID string) (*Routine, error) {
 
 // GetRoutines gets all the routines for the local manager
 func (LM *LocalManager) GetRoutines() map[string]*Routine {
-    LM.LockLocalReadMutex()
-    defer LM.UnlockLocalReadMutex()
+    LM.lockLocalReadMutex()
+    defer LM.unlockLocalReadMutex()
     
 	routinesCopy := make(map[string]*Routine, len(LM.Routines))
 	for k, v := range LM.Routines {
@@ -214,8 +214,8 @@ func (LM *LocalManager) GetLocalContext() (context.Context, context.CancelFunc) 
 
 // GetFunctionWg gets a specific function wait group for the local manager
 func (LM *LocalManager) GetFunctionWg(functionName string) (*sync.WaitGroup, error) {
-	LM.LockLocalReadMutex()
-	defer LM.UnlockLocalReadMutex()
+	LM.lockLocalReadMutex()
+	defer LM.unlockLocalReadMutex()
 
 	if _, ok := LM.FunctionWgs[functionName]; !ok {
 		return nil, fmt.Errorf("%w: %s", Errors.ErrFunctionWgNotFound, functionName)
@@ -233,8 +233,8 @@ func (LM *LocalManager) GetRoutineCount() int {
 	// Sanity check: if count is negative, something went wrong - use mutex path
 	// This should never happen in normal operation, but provides safety
 	if count < 0 {
-		LM.LockLocalReadMutex()
-		defer LM.UnlockLocalReadMutex()
+		LM.lockLocalReadMutex()
+		defer LM.unlockLocalReadMutex()
 		// Reset atomic counter to actual value
 		actualCount := len(LM.Routines)
 		atomic.StoreInt64(&LM.routineCount, int64(actualCount))
@@ -246,8 +246,8 @@ func (LM *LocalManager) GetRoutineCount() int {
 
 // GetFunctionWgCount gets the number of function wait groups for the local manager
 func (LM *LocalManager) GetFunctionWgCount() int {
-	LM.LockLocalReadMutex()
-	defer LM.UnlockLocalReadMutex()
+	LM.lockLocalReadMutex()
+	defer LM.unlockLocalReadMutex()
 	return len(LM.FunctionWgs)
 }
 
@@ -259,4 +259,11 @@ func (LM *LocalManager) GetLocalName() string {
 // GetParentContext gets the parent context for the local manager
 func (LM *LocalManager) GetParentContext() context.Context {
 	return LM.ParentCtx
+}
+
+// GetLocalWaitGroup gets the wait group for the local manager
+func (LM *LocalManager) GetLocalWaitGroup() *sync.WaitGroup {
+	LM.lockLocalReadMutex()
+	defer LM.unlockLocalReadMutex()
+	return LM.Wg
 }
