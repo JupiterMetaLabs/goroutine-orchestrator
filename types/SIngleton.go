@@ -3,7 +3,7 @@ package types
 import (
 	"sync"
 
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Errors"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Manager/Errors"
 )
 
 var (

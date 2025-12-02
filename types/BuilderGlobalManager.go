@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/neerajchowdary889/GoRoutinesManager/Context"
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Errors"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Context"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Manager/Errors"
 )
 
 func NewGlobalManager() *GlobalManager {

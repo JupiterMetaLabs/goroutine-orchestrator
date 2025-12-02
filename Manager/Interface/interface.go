@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/neerajchowdary889/GoRoutinesManager/types"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/types"
 )
 
 // GoroutineOption is a function that configures goroutine options.

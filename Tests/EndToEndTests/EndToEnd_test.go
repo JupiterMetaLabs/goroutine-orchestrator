@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/App"
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Global"
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Interface"
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Local"
-	"github.com/neerajchowdary889/GoRoutinesManager/metrics"
-	"github.com/neerajchowdary889/GoRoutinesManager/types"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Manager/App"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Manager/Global"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Manager/Interface"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Manager/Local"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/metrics"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/types"
 )
 
 // TestComplexSystemWithMetrics is a comprehensive end-to-end test that:

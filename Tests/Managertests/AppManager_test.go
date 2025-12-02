@@ -3,10 +3,10 @@ package Managertests
 import (
 	"testing"
 
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/App"
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Global"
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Local"
-	"github.com/neerajchowdary889/GoRoutinesManager/types"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Manager/App"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Manager/Global"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Manager/Local"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/types"
 )
 
 func TestAppManager_CreateApp(t *testing.T) {

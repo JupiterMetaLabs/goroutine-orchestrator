@@ -1,6 +1,6 @@
 package Local
 
-import "github.com/neerajchowdary889/GoRoutinesManager/types"
+import "github.com/JupiterMetaLabs/goroutine-orchestrator/types"
 
 type LocalHelper struct{}
 

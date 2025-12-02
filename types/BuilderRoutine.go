@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	Helper "github.com/neerajchowdary889/GoRoutinesManager/Helper/Routine"
+	Helper "github.com/JupiterMetaLabs/goroutine-orchestrator/Helper/Routine"
 )
 
 const (

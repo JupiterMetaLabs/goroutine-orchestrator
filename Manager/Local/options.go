@@ -3,7 +3,7 @@ package Local
 import (
 	"time"
 
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Interface"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Manager/Interface"
 )
 
 // Option is a function that configures goroutine options.

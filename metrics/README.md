@@ -29,8 +29,8 @@ package main
 import (
     "net/http"
     
-    "github.com/yourusername/GoRoutinesManager/metrics"
-    "github.com/yourusername/GoRoutinesManager/types"
+    "github.com/JupiterMetaLabs/goroutine-orchestrator/metrics"
+    "github.com/JupiterMetaLabs/goroutine-orchestrator/types"
 )
 
 func main() {

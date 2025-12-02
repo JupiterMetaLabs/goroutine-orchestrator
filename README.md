@@ -475,7 +475,7 @@ All operations are thread-safe:
 ### Installation
 
 ```bash
-go get github.com/neerajchowdary889/GoRoutinesManager
+go get github.com/JupiterMetaLabs/goroutine-orchestrator
 ```
 
 ### Basic Setup

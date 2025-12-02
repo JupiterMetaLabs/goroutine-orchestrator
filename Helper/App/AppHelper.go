@@ -1,6 +1,6 @@
 package App
 
-import "github.com/neerajchowdary889/GoRoutinesManager/types"
+import "github.com/JupiterMetaLabs/goroutine-orchestrator/types"
 
 // Helper function for AppManager
 type AppHelper struct{}

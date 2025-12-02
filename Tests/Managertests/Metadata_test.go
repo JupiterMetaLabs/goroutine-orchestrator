@@ -4,10 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Global"
-	"github.com/neerajchowdary889/GoRoutinesManager/Tests/Common"
-	"github.com/neerajchowdary889/GoRoutinesManager/metrics"
-	"github.com/neerajchowdary889/GoRoutinesManager/types"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Manager/Global"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Tests/Common"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/metrics"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/types"
 )
 
 // TestMetadata_NewMetadata tests the creation of new metadata

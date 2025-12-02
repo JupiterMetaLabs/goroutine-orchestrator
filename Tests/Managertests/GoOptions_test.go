@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/App"
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Local"
-	"github.com/neerajchowdary889/GoRoutinesManager/Tests/Common"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Manager/App"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Manager/Local"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Tests/Common"
 )
 
 // TestGo_Basic tests Go() without any options

@@ -4,7 +4,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/neerajchowdary889/GoRoutinesManager/types"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/types"
 )
 
 // Collector is responsible for collecting metrics from the goroutine manager

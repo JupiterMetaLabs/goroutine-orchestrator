@@ -7,13 +7,13 @@ This dashboard provides comprehensive visualization of all metrics exposed by th
 You can download the dashboard JSON file using wget:
 
 ```bash
-wget https://raw.githubusercontent.com/neerajchowdary889/GoRoutinesManager/main/metrics/grafana-dashboard.json
+wget https://raw.githubusercontent.com/JupiterMetaLabs/goroutine-orchestrator/main/metrics/Dashboard/grafana-dashboard.json
 ```
 
 Or using curl:
 
 ```bash
-curl -O https://raw.githubusercontent.com/neerajchowdary889/GoRoutinesManager/main/metrics/grafana-dashboard.json
+curl -O https://raw.githubusercontent.com/JupiterMetaLabs/goroutine-orchestrator/main/metrics/Dashboard/grafana-dashboard.json
 ```
 
 ## Prerequisites
@@ -27,7 +27,7 @@ curl -O https://raw.githubusercontent.com/neerajchowdary889/GoRoutinesManager/ma
 ### 1. Download the Dashboard
 
 ```bash
-wget https://raw.githubusercontent.com/neerajchowdary889/GoRoutinesManager/main/metrics/grafana-dashboard.json
+wget https://raw.githubusercontent.com/JupiterMetaLabs/goroutine-orchestrator/main/metrics/Dashboard/grafana-dashboard.json
 ```
 
 ### 2. Import into Grafana

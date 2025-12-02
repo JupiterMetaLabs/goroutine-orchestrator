@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/neerajchowdary889/GoRoutinesManager/types"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/types"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 

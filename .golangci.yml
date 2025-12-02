@@ -82,7 +82,7 @@ linters-settings:
   gocyclo:
     min-complexity: 15
   goimports:
-    local-prefixes: github.com/neerajchowdary889/GoRoutinesManager
+    local-prefixes: github.com/JupiterMetaLabs/goroutine-orchestrator
   gocritic:
     enabled-tags:
       - diagnostic

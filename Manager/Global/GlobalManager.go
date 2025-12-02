@@ -3,12 +3,12 @@ package Global
 import (
 	"time"
 
-	AppHelper "github.com/neerajchowdary889/GoRoutinesManager/Helper/App"
-	LocalHelper "github.com/neerajchowdary889/GoRoutinesManager/Helper/Local"
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/App"
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Interface"
-	"github.com/neerajchowdary889/GoRoutinesManager/metrics"
-	"github.com/neerajchowdary889/GoRoutinesManager/types"
+	AppHelper "github.com/JupiterMetaLabs/goroutine-orchestrator/Helper/App"
+	LocalHelper "github.com/JupiterMetaLabs/goroutine-orchestrator/Helper/Local"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Manager/App"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Manager/Interface"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/metrics"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/types"
 )
 
 type GlobalManager struct{}

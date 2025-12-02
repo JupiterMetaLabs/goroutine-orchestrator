@@ -4,9 +4,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/neerajchowdary889/GoRoutinesManager/Context"
-	"github.com/neerajchowdary889/GoRoutinesManager/metrics"
-	"github.com/neerajchowdary889/GoRoutinesManager/types"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Context"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/metrics"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/types"
 )
 
 const (

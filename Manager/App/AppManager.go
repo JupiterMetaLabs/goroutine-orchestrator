@@ -3,12 +3,12 @@ package App
 import (
 	"time"
 
-	LocalHelper "github.com/neerajchowdary889/GoRoutinesManager/Helper/Local"
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Interface"
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Local"
-	"github.com/neerajchowdary889/GoRoutinesManager/metrics"
-	"github.com/neerajchowdary889/GoRoutinesManager/types"
-	"github.com/neerajchowdary889/GoRoutinesManager/Manager/Errors"
+	LocalHelper "github.com/JupiterMetaLabs/goroutine-orchestrator/Helper/Local"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Manager/Errors"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Manager/Interface"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/Manager/Local"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/metrics"
+	"github.com/JupiterMetaLabs/goroutine-orchestrator/types"
 )
 
 type AppManager struct {
