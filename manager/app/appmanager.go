@@ -98,21 +98,22 @@ func (AM *AppManagerStruct) CreateApp() (*types.AppManager, error) {
 //
 // Shutdown behavior:
 //
-//   Safe shutdown (safe=true):
-//   - Triggers shutdown on all local managers concurrently
-//   - Waits for local managers to complete using wait groups
-//   - Each local manager performs graceful → timeout → force cancellation
-//   - Records shutdown duration and any errors
+//	Safe shutdown (safe=true):
+//	- Triggers shutdown on all local managers concurrently
+//	- Waits for local managers to complete using wait groups
+//	- Each local manager performs graceful → timeout → force cancellation
+//	- Records shutdown duration and any errors
 //
-//   Unsafe shutdown (safe=false):
-//   - Immediately cancels all local manager contexts
-//   - Cancels app manager's context
-//   - No waiting for goroutines to complete
+//	Unsafe shutdown (safe=false):
+//	- Immediately cancels all local manager contexts
+//	- Cancels app manager's context
+//	- No waiting for goroutines to complete
 //
 // Returns:
 //   - error: nil on success, error if app manager not found or shutdown fails
 //
 // Example:
+//
 //	Graceful shutdown
 //	if err := appMgr.Shutdown(true); err != nil {
 //	    log.Printf("Shutdown error: %v", err)
@@ -389,4 +390,20 @@ func (AM *AppManagerStruct) GetLocalManagerByName(localName string) (*types.Loca
 		return nil, err
 	}
 	return appManager.GetLocalManager(localName)
+}
+
+// Get retrieves a specific app manager by its name.
+//
+// Returns:
+//   - *types.AppManager: The requested app manager instance
+//   - error: Returns error if app manager is not found
+//
+// Example:
+//
+//	appMgr, err := appMgr.Get()
+//	if err != nil {
+//	    log.Printf("App manager not found: %v", err)
+//	}
+func (AM *AppManagerStruct) Get() (*types.AppManager, error) {
+	return types.GetAppManager(AM.AppName)
 }

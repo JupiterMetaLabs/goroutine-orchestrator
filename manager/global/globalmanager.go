@@ -423,3 +423,19 @@ func (GM *GlobalManagerStruct) UpdateMetadata(flag string, value interface{}) (*
 func (GM *GlobalManagerStruct) GetMetadata() (*types.Metadata, error) {
 	return GM.GetGlobalMetadata()
 }
+
+// Get retrieves the global manager instance.
+//
+// Returns:
+//   - *types.GlobalManager: The global manager instance
+//   - error: Returns error if global manager is not initialized
+//
+// Example:
+//
+//	globalMgr, err := globalMgr.Get()
+//	if err != nil {
+//	    log.Printf("Error: %v", err)
+//	}
+func (GM *GlobalManagerStruct) Get() (*types.GlobalManager, error) {
+	return types.GetGlobalManager()
+}
