@@ -16,10 +16,10 @@ type GoroutineOption interface{}
 // Initializer initializes the manager
 type GlobalInitializer interface {
 	Init() (*types.GlobalManager, error)
+	Get() (*types.GlobalManager, error)
 }
 
-
-// Shutdowner handles shutdown of the manager
+// Functions to get the 
 type Shutdowner interface {
 	Shutdown(safe bool) error
 }
@@ -70,11 +70,13 @@ type AppManagerLister interface {
 // AppManagerCreator creates new app managers
 type AppManagerCreator interface {
 	CreateApp() (*types.AppManager, error)
+	Get() (*types.AppManager, error)
 }
 
 // LocalManagerCreator creates new local managers
 type LocalManagerCreator interface {
 	CreateLocal(localName string) (*types.LocalManager, error)
+	Get() (*types.LocalManager, error)
 }
 
 type FunctionWaitGroupCreator interface {

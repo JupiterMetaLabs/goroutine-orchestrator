@@ -687,3 +687,19 @@ func (LM *LocalManagerStruct) GetRoutinesByFunctionName(functionName string) ([]
 	}
 	return result, nil
 }
+
+// Get retrieves a specific local manager by its name.
+//
+// Returns:
+//   - *types.LocalManager: The requested local manager instance
+//   - error: Returns error if local manager is not found
+//
+// Example:
+//
+//	localMgr, err := localMgr.Get()
+//	if err != nil {
+//	    log.Printf("Local manager not found: %v", err)
+//	}
+func (LM *LocalManagerStruct) Get() (*types.LocalManager, error) {
+	return types.GetLocalManager(LM.AppName, LM.LocalName)
+}
