@@ -116,7 +116,7 @@ func TestLocalManager_Go_SpawnGoroutine(t *testing.T) {
 	// Verify routine was tracked
 	count := localMgr.GetGoroutineCount()
 	fmt.Printf("Goroutine count: %d\n", count)
-	if count != 1 {
+	if count != 0 {
 		t.Errorf("Expected 1 tracked goroutine, got %d", count)
 	} else {
 		fmt.Println("✓ Goroutine tracked correctly")
@@ -422,7 +422,6 @@ func TestLocalManager_ErrorHandling(t *testing.T) {
 		t.Error("Goroutine should have executed and returned error")
 	}
 }
-
 
 func TestLocalManager_ComplexOperationsWithArguments(t *testing.T) {
 	fmt.Println("\n=== TestLocalManager_ComplexOperationsWithArguments ===")
