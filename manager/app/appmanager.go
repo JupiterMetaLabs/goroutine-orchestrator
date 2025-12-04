@@ -190,7 +190,7 @@ func (AM *AppManagerStruct) Shutdown(safe bool) error {
 	return nil
 }
 
-// CreateLocal creates a new local manager within this app manager.
+// NewLocalManager creates a new local manager within this app manager.
 // A local manager is used to organize and manage goroutines for a specific module or file.
 //
 // Parameters:
@@ -202,16 +202,16 @@ func (AM *AppManagerStruct) Shutdown(safe bool) error {
 //   - Records metrics for the create operation
 //
 // Returns:
-//   - *types.LocalManager: The initialized local manager instance
+//   - *interfaces.LocalGoroutineManagerInterface: The initialized local manager instance
 //   - error: Returns error if local manager creation fails or if not found
 //
 // Example:
 //
-//	localMgr, err := appMgr.CreateLocal("http-handlers")
+//	localMgr, err := appMgr.NewLocalManager("http-handlers")
 //	if err != nil {
 //	    log.Fatalf("Failed to create local manager: %v", err)
 //	}
-func (AM *AppManagerStruct) CreateLocal(localName string) (*types.LocalManager, error) {
+func (AM *AppManagerStruct) NewLocalManager(localName string) (*interfaces.LocalGoroutineManagerInterface, error) {
 	startTime := time.Now()
 	defer func() {
 		duration := time.Since(startTime)
@@ -224,16 +224,13 @@ func (AM *AppManagerStruct) CreateLocal(localName string) (*types.LocalManager, 
 		metrics.RecordOperationError("manager", "create_local", "local_manager_not_found")
 		return nil, errors.ErrLocalManagerNotFound
 	}
-	Manager, err := localManager.CreateLocal(localName)
+	_, err := localManager.CreateLocal(localName)
 	if err != nil {
 		metrics.RecordOperationError("manager", "create_local", "create_failed")
 		return nil, err
 	}
 
-	// Record operation
-	metrics.RecordManagerOperation("local", "create", AM.AppName)
-
-	return Manager, nil
+	return &localManager, nil
 }
 
 // GetAllLocalManagers retrieves all local managers registered with this app manager.
