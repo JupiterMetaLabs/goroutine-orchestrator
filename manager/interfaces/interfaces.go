@@ -19,7 +19,7 @@ type GlobalInitializer interface {
 	Get() (*types.GlobalManager, error)
 }
 
-// Functions to get the 
+// Functions to get the
 type Shutdowner interface {
 	Shutdown(safe bool) error
 }
@@ -119,6 +119,8 @@ type GlobalGoroutineManagerInterface interface {
 	LocalManagerLister
 
 	GoroutineLister
+
+	NewAppManager(appName string) (AppGoroutineManagerInterface, error)
 }
 
 // AppGoroutineManagerInterface defines the complete interface for app manager
@@ -132,6 +134,9 @@ type AppGoroutineManagerInterface interface {
 	GoroutineLister
 
 	LocalManagerGetter
+
+	// NewLocalManager creates a new local manager within this app manager
+	NewLocalManager(localName string) (LocalGoroutineManagerInterface, error)
 }
 
 // LocalGoroutineManagerInterface defines the complete interface for local manager

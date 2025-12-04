@@ -439,3 +439,28 @@ func (GM *GlobalManagerStruct) GetMetadata() (*types.Metadata, error) {
 func (GM *GlobalManagerStruct) Get() (*types.GlobalManager, error) {
 	return types.GetGlobalManager()
 }
+
+// NewAppManager creates a new app manager within the global manager.
+// This method is used to create a new app manager within the global manager.
+//
+// Parameters:
+//   - appName: The name of the app manager to create
+//
+// Returns:
+//   - *interfaces.AppGoroutineManagerInterface: The created app manager instance
+//   - error: Returns error if app manager creation fails or if not found
+//
+// Example:
+//
+//	appMgr, err := globalMgr.NewAppManager("test-app")
+//	if err != nil {
+//	    log.Fatalf("Failed to create app manager: %v", err)
+//	}
+func (GM *GlobalManagerStruct) NewAppManager(appName string) (interfaces.AppGoroutineManagerInterface, error) {
+	AppManager := app.NewAppManager(appName)
+	_, err := AppManager.CreateApp()
+	if err != nil {
+		return nil, err
+	}
+	return AppManager, nil
+}

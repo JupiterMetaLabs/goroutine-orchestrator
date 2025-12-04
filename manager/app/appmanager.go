@@ -211,7 +211,7 @@ func (AM *AppManagerStruct) Shutdown(safe bool) error {
 //	if err != nil {
 //	    log.Fatalf("Failed to create local manager: %v", err)
 //	}
-func (AM *AppManagerStruct) NewLocalManager(localName string) (*interfaces.LocalGoroutineManagerInterface, error) {
+func (AM *AppManagerStruct) NewLocalManager(localName string) (interfaces.LocalGoroutineManagerInterface, error) {
 	startTime := time.Now()
 	defer func() {
 		duration := time.Since(startTime)
@@ -230,7 +230,7 @@ func (AM *AppManagerStruct) NewLocalManager(localName string) (*interfaces.Local
 		return nil, err
 	}
 
-	return &localManager, nil
+	return localManager, nil
 }
 
 // GetAllLocalManagers retrieves all local managers registered with this app manager.

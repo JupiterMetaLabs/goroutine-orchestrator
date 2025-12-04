@@ -42,6 +42,92 @@ func TestAppManager_CreateApp(t *testing.T) {
 	}
 }
 
+func TestCreateLocalManager(t *testing.T) {
+	common.ResetGlobalState()
+
+	globalMgr := global.NewGlobalManager()
+
+	// Create app manager first time
+	AppManager1, err := globalMgr.NewAppManager("test-app")
+	if err != nil {
+		t.Fatalf("NewAppManager() failed: %v", err)
+	}
+
+	// Create local manager first time
+	LocalManager1, err := AppManager1.NewLocalManager("test-local")
+	if err != nil {
+		t.Fatalf("NewLocalManager() failed: %v", err)
+	}
+
+	if LocalManager1 == nil {
+		t.Fatal("NewLocalManager() returned nil")
+	}
+
+	// Create the same app manager again
+	AppManager2, err := globalMgr.NewAppManager("test-app")
+	if err != nil {
+		t.Fatalf("NewAppManager() second call failed: %v", err)
+	}
+
+	// Create the same local manager again
+	LocalManager2, err := AppManager2.NewLocalManager("test-local")
+	if err != nil {
+		t.Fatalf("NewLocalManager() second call failed: %v", err)
+	}
+
+	if LocalManager2 == nil {
+		t.Fatal("NewLocalManager() second call returned nil")
+	}
+
+	// Verify interface instances are different (new structs created each time)
+	// But they should manage the same underlying state
+	if AppManager1 == AppManager2 {
+		t.Error("AppManager instances should be different (new structs created each time)")
+	}
+
+	if LocalManager1 == LocalManager2 {
+		t.Error("LocalManager interface instances should be different (new structs created each time)")
+	}
+
+	// Verify they point to the same underlying state by checking the types
+	// Get the underlying types.LocalManager instances
+	app1, err := AppManager1.Get()
+	if err != nil {
+		t.Fatalf("AppManager1.Get() failed: %v", err)
+	}
+
+	app2, err := AppManager2.Get()
+	if err != nil {
+		t.Fatalf("AppManager2.Get() failed: %v", err)
+	}
+
+	// Both should point to the same *types.AppManager instance
+	if app1 != app2 {
+		t.Error("AppManager1 and AppManager2 should point to the same underlying *types.AppManager instance")
+	}
+
+	// Verify local managers point to the same underlying state
+	local1, err := LocalManager1.Get()
+	if err != nil {
+		t.Fatalf("LocalManager1.Get() failed: %v", err)
+	}
+
+	local2, err := LocalManager2.Get()
+	if err != nil {
+		t.Fatalf("LocalManager2.Get() failed: %v", err)
+	}
+
+	// Both should point to the same *types.LocalManager instance
+	if local1 != local2 {
+		t.Error("LocalManager1 and LocalManager2 should point to the same underlying *types.LocalManager instance")
+	}
+
+	// Verify they have the same properties (since they're the same instance, this is redundant but good for clarity)
+	if local1.LocalName != local2.LocalName {
+		t.Errorf("LocalName mismatch: %s != %s", local1.LocalName, local2.LocalName)
+	}
+}
+
 func TestAppManager_CreateApp_Idempotent(t *testing.T) {
 	common.ResetGlobalState()
 
