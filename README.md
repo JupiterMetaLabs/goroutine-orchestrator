@@ -1,4 +1,4 @@
-# GoRoutinesManager
+# GRO (Go Routine Orchestrator)
 
 A lightweight, hierarchical goroutine supervision system for Go that centralizes goroutine creation, lifecycle control, and shutdown handling. This library prevents goroutine leaks, improves observability, and enforces safe concurrency patterns in production applications.
 
