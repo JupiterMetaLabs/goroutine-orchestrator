@@ -188,18 +188,48 @@ func (LM *LocalManagerStruct) GetRoutine(routineID string) (*types.Routine, erro
 }
 
 // WaitForFunction waits for all goroutines of a specific function to complete.
+//
+// It waits on the function wait group when one exists (goroutines started
+// with AddToWaitGroup) AND on the done channel of every goroutine tracked
+// under functionName. Every goroutine spawned by Go has a done channel that
+// is closed when it returns, whether or not it joined a wait group.
+//
+// Before, a function with no wait group returned an error here, so
+// WaitForFunctionWithTimeout never saw it complete and waited its full
+// timeout even when every goroutine had already stopped. The safe branch of
+// Shutdown calls it once per function name, so a manager whose goroutines
+// were started without AddToWaitGroup took the whole shutdown timeout on
+// every stop.
 func (LM *LocalManagerStruct) WaitForFunction(functionName string) error {
 	localManager, err := types.GetLocalManager(LM.AppName, LM.LocalName)
 	if err != nil {
 		return err
 	}
 
-	wg, err := localManager.GetFunctionWg(functionName)
-	if err != nil {
-		return err // No wait group for this function
+	if wg, wgErr := localManager.GetFunctionWg(functionName); wgErr == nil && wg != nil {
+		wg.Wait()
 	}
 
-	wg.Wait()
+	return LM.waitForFunctionRoutines(functionName)
+}
+
+// waitForFunctionRoutines waits until every goroutine currently tracked under
+// functionName has returned, using each routine's done channel. A goroutine
+// that has already finished is no longer tracked (or its channel is already
+// closed), so it does not hold the wait up.
+func (LM *LocalManagerStruct) waitForFunctionRoutines(functionName string) error {
+	routines, err := LM.GetAllGoroutines()
+	if err != nil {
+		return err
+	}
+	for _, routine := range routines {
+		if routine == nil || routine.GetFunctionName() != functionName {
+			continue
+		}
+		if done := routine.DoneChan(); done != nil {
+			<-done
+		}
+	}
 	return nil
 }
 
